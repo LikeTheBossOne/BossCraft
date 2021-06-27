@@ -26,7 +26,11 @@ public:
 
 	void SetCenter(glm::vec3 blockPos);
 	void Update(float dt);
-	void UpdateMesh();
+
+	void UpdateChunks(float dt);
+	void UpdateChunkData(float dt);
+	void UpdateChunkMeshes();
+	void Render();
 
 	unsigned int GetBlockAtAbsPos(glm::ivec3 blockPos);
 	bool BlockInRenderDistance(glm::ivec3 blockPos);

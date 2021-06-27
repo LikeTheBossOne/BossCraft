@@ -73,6 +73,33 @@ void World::SetCenter(glm::vec3 blockPos)
 
 void World::Update(float dt)
 {
+	//unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
+	//for (int i = 0; i < totalChunks; i++)
+	//{
+	//	Chunk* chunk = _chunks[i];
+	//	if (chunk == NULL)
+	//	{
+	//		continue;
+	//	}
+
+	//	//std::thread t(&Chunk::LoadData, chunk);
+	//	//std::thread t2(&Chunk::GenerateMesh, chunk);
+	//	chunk->Update(dt);
+	//}
+	//
+
+	std::thread* update = new std::thread(&World::UpdateChunks, this, dt);
+	Render();
+}
+
+void World::UpdateChunks(float dt)
+{
+	UpdateChunkData(dt);
+	UpdateChunkMeshes();
+}
+
+void World::UpdateChunkData(float dt)
+{
 	unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
 	for (int i = 0; i < totalChunks; i++)
 	{
@@ -82,15 +109,38 @@ void World::Update(float dt)
 			continue;
 		}
 
-		//std::thread t(&Chunk::LoadData, chunk);
-		//std::thread t2(&Chunk::GenerateMesh, chunk);
-		chunk->Update(dt);
+		chunk->LoadData();
 	}
 }
 
-void World::UpdateMesh()
+void World::UpdateChunkMeshes()
 {
-	
+	unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
+	for (int i = 0; i < totalChunks; i++)
+	{
+		Chunk* chunk = _chunks[i];
+		if (chunk == NULL)
+		{
+			continue;
+		}
+
+		chunk->GenerateMesh();
+	}
+}
+
+void World::Render()
+{
+	unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
+	for (int i = 0; i < totalChunks; i++)
+	{
+		Chunk* chunk = _chunks[i];
+		if (chunk == NULL)
+		{
+			continue;
+		}
+
+		chunk->RenderMesh();
+	}
 }
 
 unsigned World::GetBlockAtAbsPos(glm::ivec3 blockPos)

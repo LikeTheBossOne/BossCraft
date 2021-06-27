@@ -112,8 +112,6 @@ void Chunk::GenerateMesh()
 	if (_meshMutex.try_lock())
 	{
 		//TODO: make sure this is in the right order. This should maybe happen in the render function instead.
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, _world->_textureID);
 		
 		// loop over blocks in chunk
 		for (unsigned x = 0; x < CHUNK_WIDTH; x++)
@@ -158,8 +156,6 @@ void Chunk::GenerateMesh()
 		}
 		_isDirty = false;
 		
-		BufferMesh();
-		
 		_meshIsLoaded = true;
 		_meshMutex.unlock();
 	}
@@ -176,6 +172,12 @@ void Chunk::RenderMesh()
 	}
 
 	//
+	
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, _world->_textureID);
+	
+	BufferMesh();
+	
 
 	Camera* camera = _world->GetCamera();
 	glm::mat4 projection = glm::perspective(glm::radians(camera->_fov), 800.f / 600.f, 0.1f, 300.0f);
@@ -194,6 +196,9 @@ void Chunk::RenderMesh()
 	shader->UniSetFloat("redColor", (_chunkPos[0] + 6) / 12.f);
 	shader->UniSetFloat("greenColor", (_chunkPos[1] + 6) / 12.f);
 
+	glActiveTexture(GL_TEXTURE0); //
+	glBindTexture(GL_TEXTURE_2D, _world->_textureID); //
+	
 	glBindVertexArray(_mesh->VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, _mesh->VBO);
 	// position attribute
@@ -210,7 +215,6 @@ void Chunk::RenderMesh()
 	glDrawElements(GL_TRIANGLES, _mesh->indicesIndex, GL_UNSIGNED_SHORT, 0);
 
 	glBindVertexArray(0);
-
 	
 	_meshMutex.unlock();
 }
