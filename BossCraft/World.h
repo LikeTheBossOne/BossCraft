@@ -1,5 +1,8 @@
 #pragma once
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/gtx/hash.hpp"
 #include "Shader.h"
+#include <unordered_map>
 
 class Chunk;
 class Camera;
@@ -12,7 +15,7 @@ private:
 	Camera* _mainCamera;
 	Shader* _shader;
 
-	Chunk** _chunks;
+	std::unordered_map<glm::ivec2, Chunk*> _chunks;
 
 	uint8_t _renderDistance;
 	glm::ivec2 _chunkOrigin;

@@ -1,6 +1,11 @@
 #include "World.h"
 #include "Chunk.h"
 #include "Camera.h"
+#include <stdlib.h>
+#include <stdlib.h>
+#include <stdlib.h>
+#include <stdlib.h>
+#include <stdlib.h>
 
 
 World::World(Shader* shader, unsigned int textureID) : _shader(shader), _textureID(textureID)
@@ -25,8 +30,7 @@ void World::Init(Camera* mainCamera)
 	_chunkOrigin = glm::ivec2(-_renderDistance, -_renderDistance);
 
 	unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
-	_chunks = (Chunk**)malloc(sizeof(Chunk*) * totalChunks);
-	memset(_chunks, 0, sizeof(Chunk*) * totalChunks);
+	_chunks = std::unordered_map<glm::ivec2, Chunk*>();
 
 	LoadNewChunks();
 }
@@ -41,31 +45,29 @@ void World::SetCenter(glm::vec3 blockPos)
 	}
 	
 	glm::ivec2 offset = newCenterChunk - _centerChunk;
+	glm::ivec2 oldOrigin = _chunkOrigin;
 	_chunkOrigin += offset;
 	_centerChunk = newCenterChunk;
+
 	
-	unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
-	Chunk** oldChunks = static_cast<Chunk**>(malloc(sizeof(Chunk*) * totalChunks));
-
-	memcpy(oldChunks, _chunks, sizeof(Chunk*) * totalChunks);
-	memset(_chunks, 0, sizeof(Chunk*) * totalChunks);
-
-	for (unsigned int i = 0; i < totalChunks; i++)
+	for (int x = oldOrigin.x; x < oldOrigin.x + (_renderDistance * 2) + 1; x++)
 	{
-		Chunk* oldChunk = oldChunks[i];
-		if (oldChunk == NULL)
+		for (int z = oldOrigin[1]; z < oldOrigin[1] + (_renderDistance * 2) + 1; z++)
 		{
-			continue;
-		}
-		else if (ChunkInRenderDistance(oldChunk->_chunkPos))
-		{
-			_chunks[AbsChunkPosToRelIndex(oldChunk->_chunkPos)] = oldChunk;
-		}
-		else
-		{
-			// Destroy chunk
-			delete oldChunk;
-			oldChunk = NULL;
+			glm::ivec2 chunkPos = glm::ivec2(x, z);
+			Chunk* oldChunk = NULL;
+			if (_chunks.find(chunkPos) == _chunks.end() || (oldChunk = _chunks[chunkPos]) == NULL)
+			{
+				continue;
+			}
+			else
+			{
+				if (!ChunkInRenderDistance(chunkPos))
+				{
+					delete oldChunk;
+					_chunks[chunkPos] = NULL;
+				}
+			}
 		}
 	}
 	LoadNewChunks();
@@ -73,21 +75,6 @@ void World::SetCenter(glm::vec3 blockPos)
 
 void World::Update(float dt)
 {
-	//unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
-	//for (int i = 0; i < totalChunks; i++)
-	//{
-	//	Chunk* chunk = _chunks[i];
-	//	if (chunk == NULL)
-	//	{
-	//		continue;
-	//	}
-
-	//	//std::thread t(&Chunk::LoadData, chunk);
-	//	//std::thread t2(&Chunk::GenerateMesh, chunk);
-	//	chunk->Update(dt);
-	//}
-	//
-
 	std::thread* update = new std::thread(&World::UpdateChunks, this, dt);
 	Render();
 }
@@ -100,46 +87,49 @@ void World::UpdateChunks(float dt)
 
 void World::UpdateChunkData(float dt)
 {
-	unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
-	for (int i = 0; i < totalChunks; i++)
+	for (int x = _chunkOrigin[0]; x < _chunkOrigin[0] + (_renderDistance * 2) + 1; x++)
 	{
-		Chunk* chunk = _chunks[i];
-		if (chunk == NULL)
+		for (int z = _chunkOrigin[1]; z < _chunkOrigin[1] + (_renderDistance * 2) + 1; z++)
 		{
-			continue;
+			glm::ivec2 pos = glm::ivec2(x, z);
+			Chunk* chunk = NULL;
+			if (_chunks.find(pos) != _chunks.end() && (chunk = _chunks[pos]) != NULL)
+			{
+				chunk->LoadData();
+			}
 		}
-
-		chunk->LoadData();
 	}
 }
 
 void World::UpdateChunkMeshes()
 {
-	unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
-	for (int i = 0; i < totalChunks; i++)
+	for (int x = _chunkOrigin[0]; x < _chunkOrigin[0] + (_renderDistance * 2) + 1; x++)
 	{
-		Chunk* chunk = _chunks[i];
-		if (chunk == NULL)
+		for (int z = _chunkOrigin[1]; z < _chunkOrigin[1] + (_renderDistance * 2) + 1; z++)
 		{
-			continue;
+			glm::ivec2 pos = glm::ivec2(x, z);
+			Chunk* chunk = NULL;
+			if (_chunks.find(pos) != _chunks.end() && (chunk = _chunks[pos]) != NULL)
+			{
+				chunk->GenerateMesh();
+			}
 		}
-
-		chunk->GenerateMesh();
 	}
 }
 
 void World::Render()
 {
-	unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
-	for (int i = 0; i < totalChunks; i++)
+	for (int x = _chunkOrigin[0]; x < _chunkOrigin[0] + (_renderDistance * 2) + 1; x++)
 	{
-		Chunk* chunk = _chunks[i];
-		if (chunk == NULL)
+		for (int z = _chunkOrigin[1]; z < _chunkOrigin[1] + (_renderDistance * 2) + 1; z++)
 		{
-			continue;
+			glm::ivec2 pos = glm::ivec2(x, z);
+			Chunk* chunk = NULL;
+			if (_chunks.find(pos) != _chunks.end() && (chunk = _chunks[pos]) != NULL)
+			{
+				chunk->RenderMesh();
+			}
 		}
-
-		chunk->RenderMesh();
 	}
 }
 
@@ -148,11 +138,11 @@ unsigned World::GetBlockAtAbsPos(glm::ivec3 blockPos)
 	if (blockPos.y < 0 || blockPos.y >= CHUNK_HEIGHT) return 0;
 	
 	// Assumes that block is inside of render distance!
-	unsigned int chunkIdx = BlockPosToRelChunkIndex(blockPos);
+	glm::ivec2 chunkPos = BlockPosToAbsChunkPos(blockPos);
 
 	// Get block's position inside of the chunk
-	Chunk* chunk = _chunks[chunkIdx];
-	glm::vec3 pos = glm::vec3(blockPos.x - (chunk->_chunkPos[0] * CHUNK_WIDTH), blockPos.y, blockPos.z - (chunk->_chunkPos[1] * CHUNK_WIDTH));
+	Chunk* chunk = _chunks[chunkPos];
+	glm::vec3 pos = glm::vec3(blockPos.x - (chunkPos[0] * CHUNK_WIDTH), blockPos.y, blockPos.z - (chunkPos[1] * CHUNK_WIDTH));
 
 	//if (pos.x <= 0 || pos.x >= CHUNK_WIDTH || pos.z <= 0 || pos.z >= CHUNK_WIDTH) return 0;
 	
@@ -171,13 +161,16 @@ Shader* World::GetShader()
 
 void World::LoadNewChunks()
 {
-	unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
-	for (unsigned int i = 0; i < totalChunks; i++)
+	for (int x = _chunkOrigin[0]; x < _chunkOrigin[0] + (_renderDistance * 2) + 1; x++)
 	{
-		if (_chunks[i] == NULL)
+		for (int z = _chunkOrigin[1]; z < _chunkOrigin[1] + (_renderDistance * 2) + 1; z++)
 		{
-			Chunk* chunk = new Chunk(RelChunkIndexToAbsChunkPos(i), this);
-			_chunks[i] = chunk;
+			glm::ivec2 pos = glm::ivec2(x, z);
+			Chunk* chunk;
+			if (_chunks.find(pos) == _chunks.end() || _chunks[pos] == NULL)
+			{
+				_chunks[pos] = new Chunk(pos, this);
+			}
 		}
 	}
 }

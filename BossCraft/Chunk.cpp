@@ -53,6 +53,7 @@ Chunk::~Chunk()
 	free(_mesh->indexBuffer);
 	delete _mesh;
 }
+
 unsigned int Chunk::PositionToIndex(unsigned int posX, unsigned int posY, unsigned int posZ)
 {
 	return posX * CHUNK_HEIGHT * CHUNK_WIDTH + posY * CHUNK_WIDTH + posZ;

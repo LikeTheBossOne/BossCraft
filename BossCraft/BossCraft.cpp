@@ -167,7 +167,7 @@ void RenderLoop(GLFWwindow* window)
 		fpsCounts++;
 		if (fpsCounts > 10)
 		{
-			//std::cout << dt * 1000 << std::endl;
+			std::cout << dt * 1000 << std::endl;
 			fpsCounts = 0;
 		}
 		
