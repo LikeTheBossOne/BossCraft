@@ -143,6 +143,8 @@ void Chunk::GenerateMesh()
 							}
 							else
 							{
+								//TODO: I could refactor this to make it thread-safe by first checking if the wNeighbor chunk was loaded.
+								//Otherwise, it will continue to error on GetBlockAtAbsPos because the chunk isn't loaded.
 								visible = (_world->BlockInRenderDistance(wNeighbor) && _world->GetBlockAtAbsPos(wNeighbor) == 0);
 							}
 

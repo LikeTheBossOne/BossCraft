@@ -64,8 +64,8 @@ void World::SetCenter(glm::vec3 blockPos)
 			{
 				if (!ChunkInRenderDistance(chunkPos))
 				{
-					delete oldChunk;
-					_chunks[chunkPos] = NULL;
+					//delete oldChunk;
+					//_chunks[chunkPos] = NULL;
 				}
 			}
 		}
@@ -170,6 +170,8 @@ void World::LoadNewChunks()
 			if (_chunks.find(pos) == _chunks.end() || _chunks[pos] == NULL)
 			{
 				_chunks[pos] = new Chunk(pos, this);
+
+				//TODO: Instead of this, create a multi-threaded task that creates a chunk given a worldstate
 			}
 		}
 	}
