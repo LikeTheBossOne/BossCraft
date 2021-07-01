@@ -3,11 +3,13 @@
 #include "glm/gtx/hash.hpp"
 #include "Shader.h"
 #include <unordered_map>
+#include "IEventHandler.h"
 
 class Chunk;
+class ChunkGenerator;
 class Camera;
 
-class World
+class World : public IEventHandler
 {
 private:
 	const uint16_t MaxNewChunksPerFrame = 16;
@@ -16,6 +18,7 @@ private:
 	Shader* _shader;
 
 	std::unordered_map<glm::ivec2, Chunk*> _chunks;
+	ChunkGenerator* _chunkGenerator;
 
 	uint8_t _renderDistance;
 	glm::ivec2 _chunkOrigin;
@@ -35,8 +38,9 @@ public:
 	void UpdateChunkMeshes();
 	void Render();
 
-	unsigned int GetBlockAtAbsPos(glm::ivec3 blockPos);
+	uint8_t GetBlockAtAbsPos(glm::ivec3 blockPos);
 	bool BlockInRenderDistance(glm::ivec3 blockPos);
+	glm::ivec2 BlockPosToAbsChunkPos(glm::ivec3 blockPos);
 
 	Camera* GetCamera();
 	Shader* GetShader();
@@ -44,12 +48,13 @@ private:
 	void Init(Camera* mainCamera);
 	
 	void LoadNewChunks();
-	void LoadNewChunksRadially();
 
 	unsigned int BlockPosToRelChunkIndex(glm::ivec3 blockPos);
 	unsigned int AbsChunkPosToRelIndex(glm::ivec2 chunkPos);
 	unsigned int RelChunkPosToRelIndex(glm::ivec2 chunkPos);
-	glm::ivec2 BlockPosToAbsChunkPos(glm::ivec3 blockPos);
 	bool ChunkInRenderDistance(glm::ivec2 chunkPos);
 	glm::ivec2 RelChunkIndexToAbsChunkPos(unsigned int index);
+	
+public:
+	void HandleEvent(EventBase* e) override;
 };

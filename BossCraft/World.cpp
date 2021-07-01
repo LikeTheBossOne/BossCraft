@@ -6,6 +6,11 @@
 #include <stdlib.h>
 #include <stdlib.h>
 #include <stdlib.h>
+#include "EventBase.h"
+#include "ChunkLoadedEvent.h"
+#include "ChunkGenerator.h"
+#include "NeighborChunks.h"
+#include "GlobalEventManager.h"
 
 
 World::World(Shader* shader, unsigned int textureID) : _shader(shader), _textureID(textureID)
@@ -23,14 +28,18 @@ World::World(Shader* shader, unsigned int textureID, Camera* mainCamera) : _shad
 
 void World::Init(Camera* mainCamera)
 {
+	GlobalEventManager::SubscribeToEvent(this, EventType::ChunkLoaded);
+	
 	_mainCamera = mainCamera;
 
 	_centerChunk = glm::ivec2(0, 0);
-	_renderDistance = 1;
+	_renderDistance = 2;
 	_chunkOrigin = glm::ivec2(-_renderDistance, -_renderDistance);
 
 	unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
 	_chunks = std::unordered_map<glm::ivec2, Chunk*>();
+
+	_chunkGenerator = new ChunkGenerator;
 
 	LoadNewChunks();
 }
@@ -75,7 +84,7 @@ void World::SetCenter(glm::vec3 blockPos)
 
 void World::Update(float dt)
 {
-	std::thread* update = new std::thread(&World::UpdateChunks, this, dt);
+	//std::thread* update = new std::thread(&World::UpdateChunks, this, dt);
 	Render();
 }
 
@@ -133,7 +142,7 @@ void World::Render()
 	}
 }
 
-unsigned World::GetBlockAtAbsPos(glm::ivec3 blockPos)
+uint8_t World::GetBlockAtAbsPos(glm::ivec3 blockPos)
 {
 	if (blockPos.y < 0 || blockPos.y >= CHUNK_HEIGHT) return 0;
 	
@@ -169,24 +178,33 @@ void World::LoadNewChunks()
 			Chunk* chunk;
 			if (_chunks.find(pos) == _chunks.end() || _chunks[pos] == NULL)
 			{
-				_chunks[pos] = new Chunk(pos, this);
-
-				//TODO: Instead of this, create a multi-threaded task that creates a chunk given a worldstate
-			}
-		}
-	}
-}
-
-void World::LoadNewChunksRadially()
-{
-	for (int i = 0; i <= _renderDistance; i++)
-	{
-		// Get chunks in radius
-		for (int j = -i; j < i; j+= i * i)
-		{
-			for (int k = -i; k < i; k+= i * i)
-			{
-				
+				// Create chunk task
+				NeighborChunks* neighbor = new NeighborChunks();
+				glm::ivec2 posXChunk = pos - glm::ivec2(1, 0);
+				if ((neighbor->plusXLoaded = _chunks.find(posXChunk) != _chunks.end()))
+				{
+					//neighbor->plusXChunk = _chunks[posXChunk];
+					memcpy(neighbor->plusXData, _chunks[posXChunk]->_data, sizeof(uint8_t) * CHUNK_VOLUME);
+				}
+				glm::ivec2 minusXChunk = pos - glm::ivec2(-1, 0);
+				if ((neighbor->minusXLoaded = _chunks.find(minusXChunk) != _chunks.end()))
+				{
+					//neighbor->minusXChunk = _chunks[minusXChunk];
+					memcpy(neighbor->minusXData, _chunks[minusXChunk]->_data, sizeof(uint8_t) * CHUNK_VOLUME);
+				}
+				glm::ivec2 posZChunk = pos - glm::ivec2(0, 1);
+				if ((neighbor->plusZLoaded = _chunks.find(posZChunk) != _chunks.end()))
+				{
+					//neighbor->plusZChunk = _chunks[posZChunk];
+					memcpy(neighbor->plusZData, _chunks[posZChunk]->_data, sizeof(uint8_t) * CHUNK_VOLUME);
+				}
+				glm::ivec2 minusZChunk = pos - glm::ivec2(1, 0);
+				if ((neighbor->minusZLoaded = _chunks.find(minusZChunk) != _chunks.end()))
+				{
+					//neighbor->minusZChunk = _chunks[minusZChunk];
+					memcpy(neighbor->minusZData, _chunks[minusZChunk]->_data, sizeof(uint8_t) * CHUNK_VOLUME);
+				}
+				auto thread = new std::thread(&ChunkGenerator::GenerateChunk, _chunkGenerator, new Chunk(pos, this), neighbor);
 			}
 		}
 	}
@@ -234,4 +252,20 @@ glm::ivec2 World::RelChunkIndexToAbsChunkPos(unsigned index)
 	unsigned int totalDistance = (_renderDistance * 2) + 1;
 	glm::ivec2 relPos = glm::ivec2(index % totalDistance, index / totalDistance);
 	return relPos + _chunkOrigin;
+}
+
+void World::HandleEvent(EventBase* e)
+{
+	switch (e->_eventType)
+	{
+	case EventType::ChunkLoaded:
+	{
+		auto clEvent = static_cast<ChunkLoadedEvent*>(e);
+		_chunks[clEvent->_loadedChunk->_chunkPos] = clEvent->_loadedChunk;
+		clEvent->_loadedChunk->BufferMesh();
+		clEvent->_loadedChunk->_meshIsLoaded = true;
+		break;
+	}
+	default: ;
+	}
 }

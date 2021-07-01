@@ -6,6 +6,7 @@
 #include "FaceDirection.h"
 #include <mutex>
 
+class ChunkGenerator;
 class Shader;
 class Camera;
 // Chunks are 16x128x16
@@ -23,12 +24,14 @@ class World;
 
 class Chunk
 {
+	friend class ChunkGenerator;
+	friend class World;
 private:
 	ChunkMesh* _mesh;
 	std::mutex _meshMutex;
 	
 	World* _world;
-	unsigned int _data[CHUNK_VOLUME];
+	uint8_t _data[CHUNK_VOLUME];
 public:
 	glm::vec2 _chunkPos;
 	bool _isDirty;
@@ -49,7 +52,6 @@ public:
 
 #pragma endregion
 	
-	void Update(float dt);
 
 	unsigned int GetDataAtPosition(glm::vec3 pos);
 

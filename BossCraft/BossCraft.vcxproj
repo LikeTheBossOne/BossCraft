@@ -152,16 +152,24 @@
     <ClCompile Include="BossCraft.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Chunk.cpp" />
+    <ClCompile Include="ChunkGenerator.cpp" />
     <ClCompile Include="glad.c" />
+    <ClCompile Include="GlobalEventManager.cpp" />
     <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CameraDirection.h" />
     <ClInclude Include="Chunk.h" />
+    <ClInclude Include="ChunkGenerator.h" />
     <ClInclude Include="ChunkMesh.h" />
+    <ClInclude Include="EventBase.h" />
     <ClInclude Include="FaceDirection.h" />
+    <ClInclude Include="GlobalEventManager.h" />
+    <ClInclude Include="ChunkLoadedEvent.h" />
+    <ClInclude Include="IEventHandler.h" />
     <ClInclude Include="load_stb_image.h" />
+    <ClInclude Include="NeighborChunks.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="World.h" />

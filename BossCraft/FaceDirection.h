@@ -2,10 +2,10 @@
 
 enum FaceDirection
 {
-	NORTH = 0,
-	SOUTH,
-	EAST,
-	WEST,
+	NORTH = 0,	// -z
+	SOUTH,		// +z
+	EAST,		// +x
+	WEST,		// -x
 	UP,
 	DOWN
 };

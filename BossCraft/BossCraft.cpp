@@ -5,6 +5,7 @@
 #include "World.h"
 #include "load_stb_image.h"
 #include <chrono>
+#include "GlobalEventManager.h"
 
 unsigned int SCREEN_WIDTH = 800;
 unsigned int SCREEN_HEIGHT = 600;
@@ -74,7 +75,7 @@ GLFWwindow* CreateWindow()
 	glfwSetScrollCallback(window, ScrollCallback);
 
 	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	return window;
@@ -151,9 +152,8 @@ void RenderLoop(GLFWwindow* window)
 			world->GetCamera()->ProcessKeyBoard(CameraDirection::Right, .1);
 		}
 
-		// Update World
-			// Updates center point of world based on player Pos
-			// Updates chunks in world
+		GlobalEventManager::ProcessEvents();
+		
 		world->Update(0.f);
 
 		glfwSwapBuffers(window);
@@ -178,6 +178,8 @@ int main()
 {
     std::cout << "Hello World!\n";
 
+	GlobalEventManager::Init();
+	
 	GLFWwindow* window = CreateWindow();
 
 	unsigned int textureID;

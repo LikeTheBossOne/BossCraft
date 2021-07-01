@@ -51,6 +51,7 @@ Chunk::~Chunk()
 {
 	free(_mesh->dataBuffer);
 	free(_mesh->indexBuffer);
+	
 	delete _mesh;
 }
 
@@ -157,8 +158,9 @@ void Chunk::GenerateMesh()
 				}
 			}
 		}
-		_isDirty = false;
+		BufferMesh();
 		
+		_isDirty = false;
 		_meshIsLoaded = true;
 		_meshMutex.unlock();
 	}
@@ -179,7 +181,7 @@ void Chunk::RenderMesh()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, _world->_textureID);
 	
-	BufferMesh();
+	//BufferMesh();
 	
 
 	Camera* camera = _world->GetCamera();
@@ -208,8 +210,6 @@ void Chunk::RenderMesh()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	
-	glBindVertexArray(_mesh->VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, _mesh->VBO);
 	// texture coord attribute
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
@@ -255,77 +255,6 @@ void Chunk::BufferMesh()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, _mesh->indicesIndex * sizeof(uint16_t), _mesh->indexBuffer, GL_STATIC_DRAW);
 }
 
-void Chunk::Update(float dt)
-{
-	Camera* camera = _world->GetCamera();
-	glm::mat4 projection = glm::perspective(glm::radians(camera->_fov), 800.f/ 600.f, 0.1f, 300.0f);
-
-	if (_isDirty)
-	{
-		// First reset mesh data.
-		_mesh->vertexCount = 0;
-		_mesh->dataIndex = 0;
-		_mesh->indicesIndex = 0;
-		memcpy(_mesh->dataBuffer, buffers.data, sizeof(buffers.data));
-		memcpy(_mesh->indexBuffer, buffers.indices, sizeof(buffers.indices));
-	}
-
-	_world->GetShader()->Use();
-	_world->GetShader()->UniSetMat4f("view", camera->GetViewMatrix());
-	_world->GetShader()->UniSetMat4f("projection", projection);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, _world->_textureID);
-
-	if (_isDirty)
-	{
-		// loop over blocks in chunk
-		for (unsigned x = 0; x < CHUNK_WIDTH; x++)
-		{
-			for (unsigned y = 0; y < CHUNK_HEIGHT; y++)
-			{
-				for (unsigned z = 0; z < CHUNK_WIDTH; z++)
-				{
-					glm::ivec3 pos(x, y, z);
-					glm::ivec3 wPos = pos + glm::ivec3(_chunkPos[0] * CHUNK_WIDTH, 0, _chunkPos[1] * CHUNK_WIDTH);
-					unsigned int data = _data[PositionToIndex(x, y, z)];
-
-					if (data != 0)
-					{
-						// loop over directions
-						for (int d = 0; d < 6; d++)
-						{
-							glm::ivec3 dirVec = DIRECTION_VEC[d];
-							glm::ivec3 neighbor = pos + dirVec;
-							glm::ivec3 wNeighbor = wPos + dirVec;
-							
-							bool visible = false;
-
-							if (BlockInChunkBounds(neighbor))
-							{
-								// determine if block is transparent (0 = transparent block)
-								visible = (_data[PositionToIndex(neighbor.x, neighbor.y, neighbor.z)] == 0);
-							}
-							else
-							{
-								visible = (_world->BlockInRenderDistance(wNeighbor) && _world->GetBlockAtAbsPos(wNeighbor) == 0);
-							}
-
-							if (visible)
-							{
-								AddFaceToMesh(pos, static_cast<FaceDirection>(d));
-							}	
-						}
-					}
-				}
-			}
-		}
-		_isDirty = false;
-	}
-	
-	BufferMesh();
-	RenderMesh();
-}
 
 unsigned Chunk::GetDataAtPosition(glm::vec3 pos)
 {
