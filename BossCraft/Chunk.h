@@ -24,7 +24,7 @@ class World;
 
 class Chunk
 {
-	friend class ChunkGenerator;
+	friend class ChunkTaskManager;
 	friend class World;
 private:
 	ChunkMesh* _mesh;

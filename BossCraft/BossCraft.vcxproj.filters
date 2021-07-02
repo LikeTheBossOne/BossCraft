@@ -37,6 +37,12 @@
     <Filter Include="Source Files\Systems">
       <UniqueIdentifier>{8233e499-db16-41bf-90a7-ab53e71d193a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Utils">
+      <UniqueIdentifier>{c21bd199-90cf-4233-9ac2-af1e28cc6571}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utils">
+      <UniqueIdentifier>{931aa605-dbd2-4a82-a6ce-a9fa8b5f9026}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BossCraft.cpp">
@@ -57,7 +63,10 @@
     <ClCompile Include="GlobalEventManager.cpp">
       <Filter>Source Files\Events</Filter>
     </ClCompile>
-    <ClCompile Include="ChunkGenerator.cpp">
+    <ClCompile Include="ThreadPool.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="ChunkTaskManager.cpp">
       <Filter>Source Files\Systems</Filter>
     </ClCompile>
   </ItemGroup>
@@ -95,9 +104,6 @@
     <ClInclude Include="EventBase.h">
       <Filter>Header Files\Events</Filter>
     </ClInclude>
-    <ClInclude Include="ChunkGenerator.h">
-      <Filter>Header Files\Systems</Filter>
-    </ClInclude>
     <ClInclude Include="NeighborChunks.h">
       <Filter>Header Files\World</Filter>
     </ClInclude>
@@ -106,6 +112,12 @@
     </ClInclude>
     <ClInclude Include="IEventHandler.h">
       <Filter>Header Files\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadPool.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="ChunkTaskManager.h">
+      <Filter>Header Files\Systems</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
