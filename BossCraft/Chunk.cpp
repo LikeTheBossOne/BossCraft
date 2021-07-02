@@ -10,7 +10,7 @@
 Chunk::Chunk(glm::vec2 chunkPos, World* owningWorld) : _chunkPos(chunkPos), _world(owningWorld)
 {
 	_isDirty = true;
-	_meshIsLoaded = false;
+	_meshIsLoaded = true;
 	for (int x = 0; x < CHUNK_WIDTH; x++)
 	{
 		for (int y = 0; y < CHUNK_HEIGHT; y++)
@@ -97,6 +97,7 @@ void Chunk::LoadData()
 
 		// Unlock after use
 		_meshMutex.unlock();
+		_isDirty = false;
 	}
 }
 
