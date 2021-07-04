@@ -12,7 +12,7 @@ private:
 public:
 	ChunkTaskManager(World* owningWorld);
 
-	void AddDataGenTask(std::shared_ptr<Chunk> chunkToCreate);
+	void AddDataGenTask(glm::ivec2 chunkPosToCreate);
 	void AddDataUpdateTask(std::shared_ptr<Chunk> chunk);
 	/**
 	 * neighbors order = +x, -x, +z, -z

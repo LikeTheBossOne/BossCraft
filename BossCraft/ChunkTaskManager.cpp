@@ -4,19 +4,69 @@
 
 ChunkTaskManager::ChunkTaskManager(World* owningWorld) : _owningWorld(owningWorld)
 {
-	_threadPool = new ThreadPool(20);
+	_threadPool = new ThreadPool(2);
 }
 
-void ChunkTaskManager::AddDataGenTask(std::shared_ptr<Chunk> chunkToCreate)
+void ChunkTaskManager::AddDataGenTask(glm::ivec2 chunkPosToCreate)
 {
-	_threadPool->Enqueue([&, this, chunkToCreate](unsigned int threadNum)
+	_threadPool->Enqueue([&, this, chunkPosToCreate](unsigned int threadNum)
 		{
+			std::shared_ptr<Chunk> chunkToCreate = std::make_shared<Chunk>(chunkPosToCreate, _owningWorld);
 			chunkToCreate->LoadData();
 			auto &output = _owningWorld->_dataGenOutput;
-			while (output[threadNum] != NULL)
+			bool found = false;
+
+			while (!found)
 			{
+				if (output[threadNum] == NULL)
+				{
+					found = true;
+					output[threadNum] = chunkToCreate;
+				}
 			}
-			output[threadNum] = chunkToCreate;
+		/*while (!found)
+			{
+				if (output[threadNum * 8] == NULL)
+				{
+					found = true;
+					output[threadNum * 8] = chunkToCreate;
+				}
+				else if (output[threadNum * 8 + 1] == NULL)
+				{
+					found = true;
+					output[threadNum * 8 + 1] = chunkToCreate;
+				}
+				else if (output[threadNum * 8 + 2] == NULL)
+				{
+					found = true;
+					output[threadNum * 8 + 2] = chunkToCreate;
+				}
+				else if (output[threadNum * 8 + 3] == NULL)
+				{
+					found = true;
+					output[threadNum * 8 + 3] = chunkToCreate;
+				}
+				else if (output[threadNum * 8 + 4] == NULL)
+				{
+					found = true;
+					output[threadNum * 8 + 4] = chunkToCreate;
+				}
+				else if (output[threadNum * 8 + 5] == NULL)
+				{
+					found = true;
+					output[threadNum * 8 + 5] = chunkToCreate;
+				}
+				else if (output[threadNum * 8 + 6] == NULL)
+				{
+					found = true;
+					output[threadNum * 8+ 6] = chunkToCreate;
+				}
+				else if (output[threadNum * 8 + 7] == NULL)
+				{
+					found = true;
+					output[threadNum * 8 + 7] = chunkToCreate;
+				}
+			}*/
 		});
 }
 
@@ -110,10 +160,30 @@ void ChunkTaskManager::AddMeshGenTask(std::shared_ptr<Chunk> chunk, std::array<s
 				}
 			}
 			auto& output = _owningWorld->_meshGenOutput;
-			while (output[threadNum] != NULL)
+			bool found = false;
+			while (!found)
 			{
+				if (output[threadNum] == NULL)
+				{
+					found = true;
+					//output[threadNum] = chunk;
+				}
+				/*else if (output[threadNum * 4 + 1] == NULL)
+				{
+					found = true;
+					output[threadNum * 4 + 1] = chunk;
+				}
+				else if (output[threadNum * 4 + 2] == NULL)
+				{
+					found = true;
+					output[threadNum * 4 + 2] = chunk;
+				}
+				else if (output[threadNum * 4 + 3] == NULL)
+				{
+					found = true;
+					output[threadNum * 4 + 3] = chunk;
+				}*/
 			}
-			output[threadNum] = chunk;
 		});
 }
 

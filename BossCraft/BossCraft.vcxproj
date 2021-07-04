@@ -155,6 +155,7 @@
     <ClCompile Include="ChunkTaskManager.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="GlobalEventManager.cpp" />
+    <ClCompile Include="JobSystem.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="World.cpp" />
   </ItemGroup>
@@ -164,11 +165,13 @@
     <ClInclude Include="Chunk.h" />
     <ClInclude Include="ChunkMesh.h" />
     <ClInclude Include="ChunkTaskManager.h" />
+    <ClInclude Include="ConcurrentRingBuffer.h" />
     <ClInclude Include="EventBase.h" />
     <ClInclude Include="FaceDirection.h" />
     <ClInclude Include="GlobalEventManager.h" />
     <ClInclude Include="ChunkLoadedEvent.h" />
     <ClInclude Include="IEventHandler.h" />
+    <ClInclude Include="JobSystem.h" />
     <ClInclude Include="load_stb_image.h" />
     <ClInclude Include="NeighborChunks.h" />
     <ClInclude Include="Shader.h" />

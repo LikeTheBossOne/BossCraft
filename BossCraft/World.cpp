@@ -6,6 +6,7 @@
 #include "ChunkTaskManager.h"
 #include "NeighborChunks.h"
 #include "GlobalEventManager.h"
+#include "JobSystem.h"
 
 
 World::World(Shader* shader, unsigned int textureID) : _shader(shader), _textureID(textureID)
@@ -28,7 +29,7 @@ void World::Init(Camera* mainCamera)
 	_mainCamera = mainCamera;
 
 	_centerChunk = glm::ivec2(0, 0);
-	_renderDistance = 2;
+	_renderDistance = 8;
 	_chunkOrigin = glm::ivec2(-_renderDistance, -_renderDistance);
 
 	unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
@@ -37,7 +38,7 @@ void World::Init(Camera* mainCamera)
 	_chunkTaskManager = new ChunkTaskManager(this);
 	_dataGenOutput.fill(NULL);
 	_meshGenOutput.fill(NULL);
-
+	_chunksToLoad = std::queue<glm::ivec2>();
 	
 	LoadNewChunks();
 }
@@ -72,6 +73,7 @@ void World::SetCenter(glm::vec3 blockPos)
 				if (!ChunkInRenderDistance(chunkPos))
 				{
 					//delete oldChunk;
+					_chunks.erase(chunkPos);
 					//_chunks[chunkPos] = NULL;
 				}
 			}
@@ -81,9 +83,9 @@ void World::SetCenter(glm::vec3 blockPos)
 }
 
 void World::Update(float dt)
-{
+{	
 	// First Check output arrays for new data
-	for (unsigned int i = 0; i < 20; i++)
+	for (unsigned int i = 0; i < _maxJobs; i++)
 	{
 		if (_dataGenOutput[i] != NULL)
 		{
@@ -105,7 +107,7 @@ void World::Update(float dt)
 			for (unsigned int posIdx = 0; posIdx < 4; posIdx++)
 			{
 				glm::ivec2 pos = poses[posIdx];
-				if (_chunks.find(pos) != _chunks.end())
+				if (_chunks.find(pos) != _chunks.end() && _chunks[pos] != NULL)
 				{
 					neighbors[posIdx] = _chunks[pos];
 				}
@@ -115,23 +117,36 @@ void World::Update(float dt)
 				}
 			}
 			
-			_chunkTaskManager->AddMeshGenTask(chunk, neighbors);
-		}
-
-		if (_meshGenOutput[i] != NULL)
-		{
-			std::shared_ptr<Chunk> chunk = _meshGenOutput[i];
-			_meshGenOutput[i] = NULL;
-			chunk->BufferMesh();
+			chunk->GLLoad();
+			JobSystem::Execute([chunk, neighbors, i] {chunk->GenerateMesh(neighbors, i); });
 		}
 	}
 
-	
+	for (unsigned int i = 0; i < _maxJobs; i++)
+	{
+		if (_meshGenOutput[i] != NULL)
+		{
+			glm::ivec2* chunkPos = _meshGenOutput[i];
+			_meshGenOutput[i] = NULL;
+			
+			_chunks[*chunkPos]->BufferMesh();
+		}
+	}
+	CreateLoadChunksTasks();
 	Render();
+	JobSystem::Wait();
 }
 
 void World::Render()
 {
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, _textureID);
+	
+	glm::mat4 projection = glm::perspective(glm::radians(_mainCamera->_fov), 800.f / 600.f, 0.1f, 300.0f);
+
+	_shader->Use();
+	_shader->UniSetMat4f("view", _mainCamera->GetViewMatrix());
+	_shader->UniSetMat4f("projection", projection);
 	for (int x = _chunkOrigin[0]; x < _chunkOrigin[0] + (_renderDistance * 2) + 1; x++)
 	{
 		for (int z = _chunkOrigin[1]; z < _chunkOrigin[1] + (_renderDistance * 2) + 1; z++)
@@ -180,11 +195,30 @@ void World::LoadNewChunks()
 		{
 			glm::ivec2 pos = glm::ivec2(x, z);
 			std::shared_ptr<Chunk> chunk;
-			if (_chunks.find(pos) == _chunks.end() || _chunks[pos] == NULL)
+			if (_chunks.find(pos) == _chunks.end())
 			{
-				_chunkTaskManager->AddDataGenTask(std::make_shared<Chunk>(pos, this));
+				_chunks[pos] = NULL;
+				_chunksToLoad.push(pos);
 			}
 		}
+	}
+}
+
+void World::CreateLoadChunksTasks()
+{
+	int count = 0;
+	while (count < _maxJobs && !_chunksToLoad.empty())
+	{
+		glm::ivec2 pos = _chunksToLoad.front();
+		_chunksToLoad.pop();
+		JobSystem::Execute([this, pos, count]
+			{
+				std::shared_ptr<Chunk> chunkToCreate = std::make_shared<Chunk>(pos, this);
+				chunkToCreate->LoadData();
+				this->_dataGenOutput[count] = chunkToCreate;
+			});
+		
+		count++;
 	}
 }
 

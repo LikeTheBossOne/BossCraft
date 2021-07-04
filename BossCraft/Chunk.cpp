@@ -7,7 +7,7 @@
 #include "FaceDirection.h"
 #include "World.h"
 
-Chunk::Chunk(glm::vec2 chunkPos, World* owningWorld) : _chunkPos(chunkPos), _world(owningWorld)
+Chunk::Chunk(glm::ivec2 chunkPos, World* owningWorld) : _chunkPos(chunkPos), _world(owningWorld)
 {
 	_isDirty = true;
 	_meshIsLoaded = true;
@@ -29,19 +29,28 @@ Chunk::Chunk(glm::vec2 chunkPos, World* owningWorld) : _chunkPos(chunkPos), _wor
 		}
 	}
 
-	unsigned int VAO, VBO, EBO;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
+	//unsigned int VAO, VBO, EBO;
+	//glGenVertexArrays(1, &VAO);
+	//glGenBuffers(1, &VBO);
+	//glGenBuffers(1, &EBO);
+
+	//glBindVertexArray(VAO);
+	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	//// position attribute
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	//glEnableVertexAttribArray(0);
+
+	//// texture coord attribute
+	//glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	//glEnableVertexAttribArray(1);
+
+	//glBindVertexArray(0);
 
 	_mesh = new ChunkMesh
 	{
 		0,
 		0,
 		0,
-		VAO,
-		VBO,
-		EBO,
 		(float*)malloc(sizeof(buffers.data)),
 		(uint16_t*)malloc(sizeof(buffers.indices)),
 	};
@@ -84,7 +93,7 @@ bool Chunk::BlockInChunkBounds(glm::ivec3 pos)
  */
 void Chunk::LoadData()
 {
-	if (_isDirty && _meshMutex.try_lock())
+	if (_isDirty)
 	{
 		// First reset mesh data.
 		_mesh->vertexCount = 0;
@@ -96,131 +105,133 @@ void Chunk::LoadData()
 		memcpy(_mesh->indexBuffer, buffers.indices, sizeof(buffers.indices));
 
 		// Unlock after use
-		_meshMutex.unlock();
 		_isDirty = false;
 	}
 }
 
-
-/**
- * Generates a ChunkMesh. Run on worker thread.
- */
-void Chunk::GenerateMesh()
+void Chunk::GenerateMesh(std::array<std::shared_ptr<Chunk>, 4> neighbors, unsigned int outputIdx)
 {
-	if (!_isDirty || _meshIsLoaded)
+	// Generate Mesh
+	for (unsigned x = 0; x < CHUNK_WIDTH; x++)
 	{
-		return;
-	}
-
-	if (_meshMutex.try_lock())
-	{
-		//TODO: make sure this is in the right order. This should maybe happen in the render function instead.
-		
-		// loop over blocks in chunk
-		for (unsigned x = 0; x < CHUNK_WIDTH; x++)
+		for (unsigned y = 0; y < CHUNK_HEIGHT; y++)
 		{
-			for (unsigned y = 0; y < CHUNK_HEIGHT; y++)
+			for (unsigned z = 0; z < CHUNK_WIDTH; z++)
 			{
-				for (unsigned z = 0; z < CHUNK_WIDTH; z++)
-				{
-					glm::ivec3 pos(x, y, z);
-					glm::ivec3 wPos = pos + glm::ivec3(_chunkPos[0] * CHUNK_WIDTH, 0, _chunkPos[1] * CHUNK_WIDTH);
-					unsigned int data = _data[PositionToIndex(x, y, z)];
+				glm::ivec3 pos(x, y, z);
+				glm::ivec3 wPos = pos + glm::ivec3(_chunkPos[0] * CHUNK_WIDTH, 0, _chunkPos[1] * CHUNK_WIDTH);
+				unsigned int data = _data[PositionToIndex(pos)];
 
-					if (data != 0)
+				if (data != 0)
+				{
+					// loop over directions
+					for (int d = 0; d < 6; d++)
 					{
-						// loop over directions
-						for (int d = 0; d < 6; d++)
+						glm::ivec3 dirVec = DIRECTION_VEC[d];
+						glm::ivec3 neighbor = pos + dirVec;
+
+						bool visible = false;
+
+						if (BlockInChunkBounds(neighbor))
 						{
-							glm::ivec3 dirVec = DIRECTION_VEC[d];
-							glm::ivec3 neighbor = pos + dirVec;
+							// determine if block is transparent (0 = transparent block)
+							visible = (_data[PositionToIndex(neighbor)] == 0);
+						}
+						else
+						{
+							World* world = _world;
 							glm::ivec3 wNeighbor = wPos + dirVec;
 
-							bool visible = false;
-
-							if (BlockInChunkBounds(neighbor))
+							if (_world->BlockInRenderDistance(wNeighbor))
 							{
-								// determine if block is transparent (0 = transparent block)
-								visible = (_data[PositionToIndex(neighbor.x, neighbor.y, neighbor.z)] == 0);
+								visible = true;
+
+								glm::ivec3 blockRelPos = AbsBlockPosToRelPos(wNeighbor);
+								// Figure out which neighbor to send it to
+								if (d == FaceDirection::EAST)
+								{
+									if (neighbors[0] != NULL)
+									{
+										visible = (GetNeighborBlockAtPos(blockRelPos, neighbors[0]->_data) == 0);
+									}
+								}
+								else if (d == FaceDirection::WEST)
+								{
+									if (neighbors[1] != NULL)
+									{
+										visible = (GetNeighborBlockAtPos(blockRelPos, neighbors[1]->_data) == 0);
+									}
+								}
+								else if (d == FaceDirection::SOUTH)
+								{
+									if (neighbors[2] != NULL)
+									{
+										visible = (GetNeighborBlockAtPos(blockRelPos, neighbors[2]->_data) == 0);
+									}
+								}
+								else if (d == FaceDirection::NORTH)
+								{
+									if (neighbors[3] != NULL)
+									{
+										visible = (GetNeighborBlockAtPos(blockRelPos, neighbors[3]->_data) == 0);
+									}
+								}
 							}
 							else
 							{
-								//TODO: I could refactor this to make it thread-safe by first checking if the wNeighbor chunk was loaded.
-								//Otherwise, it will continue to error on GetBlockAtAbsPos because the chunk isn't loaded.
-								visible = (_world->BlockInRenderDistance(wNeighbor) && _world->GetBlockAtAbsPos(wNeighbor) == 0);
+								visible = false;
 							}
+						}
 
-							if (visible)
-							{
-								AddFaceToMesh(pos, static_cast<FaceDirection>(d));
-							}
+						if (visible)
+						{
+							AddFaceToMesh(pos, static_cast<FaceDirection>(d));
 						}
 					}
 				}
 			}
 		}
-		BufferMesh();
-		
-		_isDirty = false;
-		_meshIsLoaded = true;
-		_meshMutex.unlock();
 	}
+	auto& output = _world->_meshGenOutput;
+	output[outputIdx] = &_chunkPos;//std::shared_ptr<Chunk>(this);
 }
+
+void Chunk::GLLoad()
+{
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	// position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	// texture coord attribute
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindVertexArray(0);
+}
+
 
 /**
  * Renders the ChunkMesh. MUST BE RUN ON MAIN THREAD
  */
 void Chunk::RenderMesh()
-{
-	if (!_meshIsLoaded || !_meshMutex.try_lock())
-	{
-		return;
-	}
-
-	//
-	
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, _world->_textureID);
-	
-	//BufferMesh();
-	
-
-	Camera* camera = _world->GetCamera();
-	glm::mat4 projection = glm::perspective(glm::radians(camera->_fov), 800.f / 600.f, 0.1f, 300.0f);
-
-	_world->GetShader()->UniSetMat4f("view", camera->GetViewMatrix());
-	_world->GetShader()->UniSetMat4f("projection", projection);
-	
-	//
-	
+{	
 	Shader* shader = _world->GetShader();
 	shader->Use();
 	glm::mat4 model = glm::mat4(1.f);
-	model = glm::translate(model, glm::vec3(_chunkPos[0] * CHUNK_WIDTH, 0, _chunkPos[1] * CHUNK_WIDTH));
+	model = glm::translate(model, glm::vec3(_chunkPos[0] * 1.f * CHUNK_WIDTH, 0, _chunkPos[1] * 1.f * CHUNK_WIDTH));
 
 	shader->UniSetMat4f("model", model);
-	shader->UniSetFloat("redColor", (_chunkPos[0] + 6) / 12.f);
-	shader->UniSetFloat("greenColor", (_chunkPos[1] + 6) / 12.f);
-
-	glActiveTexture(GL_TEXTURE0); //
-	glBindTexture(GL_TEXTURE_2D, _world->_textureID); //
 	
-	glBindVertexArray(_mesh->VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, _mesh->VBO);
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	
-	// texture coord attribute
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _mesh->EBO);
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glDrawElements(GL_TRIANGLES, _mesh->indicesIndex, GL_UNSIGNED_SHORT, 0);
-
 	glBindVertexArray(0);
-	
-	_meshMutex.unlock();
 }
 
 void Chunk::AddFaceToMesh(glm::vec3 blockPos, FaceDirection direction)
@@ -233,10 +244,6 @@ void Chunk::AddFaceToMesh(glm::vec3 blockPos, FaceDirection direction)
 		_mesh->dataBuffer[_mesh->dataIndex++] = blockPos.z + vertex[2];
 		_mesh->dataBuffer[_mesh->dataIndex++] = CUBE_UVS[(i * 2) + 0];
 		_mesh->dataBuffer[_mesh->dataIndex++] = CUBE_UVS[(i * 2) + 1];
-		if (_chunkPos[0] == 0 && _chunkPos[1] == 0 && blockPos.x == 1 && blockPos.y == 1 && blockPos.z == 0 && direction == 2)
-		{
-			std::cout << vertex[0] << ", " << vertex[1] << ", " << vertex[2] << std::endl;
-		}
 	}
 
 	for (int i = 0; i < 6; i++)
@@ -249,10 +256,10 @@ void Chunk::AddFaceToMesh(glm::vec3 blockPos, FaceDirection direction)
 
 void Chunk::BufferMesh()
 {
-	glBindBuffer(GL_ARRAY_BUFFER, _mesh->VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, _mesh->dataIndex * sizeof(float), _mesh->dataBuffer, GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _mesh->EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, _mesh->indicesIndex * sizeof(uint16_t), _mesh->indexBuffer, GL_STATIC_DRAW);
 }
 
@@ -260,4 +267,14 @@ void Chunk::BufferMesh()
 unsigned Chunk::GetDataAtPosition(glm::vec3 pos)
 {
 	return _data[PositionToIndex(pos)];
+}
+
+glm::ivec3 Chunk::AbsBlockPosToRelPos(glm::ivec3 blockPos)
+{
+	return glm::ivec3(blockPos.x % CHUNK_WIDTH, blockPos.y, blockPos.z % CHUNK_WIDTH);
+}
+
+uint8_t Chunk::GetNeighborBlockAtPos(glm::ivec3 pos, uint8_t* neighborData)
+{
+	return neighborData[PositionToIndex(pos)];
 }

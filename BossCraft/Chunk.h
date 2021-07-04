@@ -27,27 +27,28 @@ class Chunk
 	friend class ChunkTaskManager;
 	friend class World;
 private:
+	unsigned int VAO, VBO, EBO;
 	ChunkMesh* _mesh;
-	std::mutex _meshMutex;
 	
 	World* _world;
 	uint8_t _data[CHUNK_VOLUME];
 public:
-	glm::vec2 _chunkPos;
+	glm::ivec2 _chunkPos;
 	bool _isDirty;
 	bool _meshIsLoaded;
 	
-	Chunk(glm::vec2 chunkPos, World* owningWorld);
+	Chunk(glm::ivec2 chunkPos, World* owningWorld);
 	~Chunk();
 
 #pragma region Job Thread
 
 	void LoadData();
-	void GenerateMesh();
+	void GenerateMesh(std::array<std::shared_ptr<Chunk>, 4> neighbors, unsigned int outputIdx);
 	
 #pragma endregion
 
 #pragma region Main Thread Only
+	void GLLoad();
 	void RenderMesh();
 
 #pragma endregion
@@ -56,6 +57,8 @@ public:
 	unsigned int GetDataAtPosition(glm::vec3 pos);
 
 private:
+	glm::ivec3 AbsBlockPosToRelPos(glm::ivec3 blockPos);
+	uint8_t GetNeighborBlockAtPos(glm::ivec3 pos, uint8_t* neighborData);
 	unsigned int PositionToIndex(unsigned int posX, unsigned int posY, unsigned int posZ);
 	unsigned int PositionToIndex(glm::ivec3 pos);
 	glm::vec3 IndexToPosition(unsigned int index);

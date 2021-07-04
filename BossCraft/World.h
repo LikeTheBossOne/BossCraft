@@ -1,6 +1,7 @@
 #pragma once
 #define GLM_ENABLE_EXPERIMENTAL
 #include <array>
+#include <queue>
 
 #include "glm/gtx/hash.hpp"
 #include "Shader.h"
@@ -15,8 +16,7 @@ class Camera;
 class World : public IEventHandler
 {
 private:
-	const uint16_t MaxNewChunksPerFrame = 16;
-
+	static const size_t _maxJobs = 1;
 	Camera* _mainCamera;
 	Shader* _shader;
 
@@ -28,8 +28,9 @@ private:
 	glm::ivec2 _centerChunk;
 
 public:
-	std::array<std::shared_ptr<Chunk>, 20> _dataGenOutput;
-	std::array<std::shared_ptr<Chunk>, 20> _meshGenOutput;
+	std::array<std::shared_ptr<Chunk>, _maxJobs> _dataGenOutput;
+	std::array<glm::ivec2*, _maxJobs> _meshGenOutput;
+	std::queue<glm::ivec2> _chunksToLoad;
 	
 	unsigned int _textureID;
 
@@ -51,7 +52,8 @@ private:
 	void Init(Camera* mainCamera);
 	
 	void LoadNewChunks();
-
+	void CreateLoadChunksTasks();
+	
 	unsigned int BlockPosToRelChunkIndex(glm::ivec3 blockPos);
 	unsigned int AbsChunkPosToRelIndex(glm::ivec2 chunkPos);
 	unsigned int RelChunkPosToRelIndex(glm::ivec2 chunkPos);

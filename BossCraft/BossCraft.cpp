@@ -6,6 +6,7 @@
 #include "load_stb_image.h"
 #include <chrono>
 #include "GlobalEventManager.h"
+#include "JobSystem.h"
 
 unsigned int SCREEN_WIDTH = 800;
 unsigned int SCREEN_HEIGHT = 600;
@@ -165,9 +166,10 @@ void RenderLoop(GLFWwindow* window)
 		dt = std::chrono::duration<float, std::chrono::seconds::period>(stopTime - startTime).count();
 
 		fpsCounts++;
-		if (fpsCounts > 10)
+		if (fpsCounts > 6)
 		{
 			std::cout << dt * 1000 << std::endl;
+			
 			fpsCounts = 0;
 		}
 		
@@ -179,6 +181,7 @@ int main()
     std::cout << "Hello World!\n";
 
 	GlobalEventManager::Init();
+	JobSystem::Init();
 	
 	GLFWwindow* window = CreateWindow();
 
