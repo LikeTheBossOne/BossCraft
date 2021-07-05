@@ -215,6 +215,11 @@ void World::CreateLoadChunksTasks()
 			{
 				std::shared_ptr<Chunk> chunkToCreate = std::make_shared<Chunk>(pos, this);
 				chunkToCreate->LoadData();
+
+				while (this->_dataGenOutput[count] != NULL)
+				{
+					
+				}
 				this->_dataGenOutput[count] = chunkToCreate;
 			});
 		

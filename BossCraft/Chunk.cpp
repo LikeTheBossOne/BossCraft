@@ -10,7 +10,7 @@
 Chunk::Chunk(glm::ivec2 chunkPos, World* owningWorld) : _chunkPos(chunkPos), _world(owningWorld)
 {
 	_isDirty = true;
-	_meshIsLoaded = true;
+	_meshIsLoaded = false;
 	for (int x = 0; x < CHUNK_WIDTH; x++)
 	{
 		for (int y = 0; y < CHUNK_HEIGHT; y++)
@@ -213,6 +213,8 @@ void Chunk::GLLoad()
 	glEnableVertexAttribArray(1);
 
 	glBindVertexArray(0);
+
+	_meshIsLoaded = true;
 }
 
 
@@ -220,7 +222,12 @@ void Chunk::GLLoad()
  * Renders the ChunkMesh. MUST BE RUN ON MAIN THREAD
  */
 void Chunk::RenderMesh()
-{	
+{
+	if (!_meshIsLoaded)
+	{
+		return;
+	}
+	
 	Shader* shader = _world->GetShader();
 	shader->Use();
 	glm::mat4 model = glm::mat4(1.f);
