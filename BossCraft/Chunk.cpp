@@ -110,7 +110,7 @@ void Chunk::LoadData()
 	}
 }
 
-void Chunk::GenerateMesh(std::array<Chunk*, 4> neighbors, unsigned int outputIdx)
+void Chunk::GenerateMesh(std::array<std::shared_ptr<Chunk>, 4> neighbors, unsigned int outputIdx)
 {
 	// Generate Mesh
 	for (unsigned x = 0; x < CHUNK_WIDTH; x++)
@@ -194,7 +194,7 @@ void Chunk::GenerateMesh(std::array<Chunk*, 4> neighbors, unsigned int outputIdx
 	}
 	//std::cout << "Mesh" << std::endl;
 	auto& output = _world->_meshGenOutput;
-	output[outputIdx] = this;//std::shared_ptr<Chunk>(this);
+	output[outputIdx] = &_chunkPos;
 }
 
 void Chunk::GLLoad()

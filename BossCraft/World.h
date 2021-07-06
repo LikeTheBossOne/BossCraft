@@ -20,7 +20,7 @@ private:
 	Camera* _mainCamera;
 	Shader* _shader;
 
-	std::unordered_map<glm::ivec2, Chunk*> _chunks;
+	std::unordered_map<glm::ivec2, std::shared_ptr<Chunk>> _chunks;
 	ChunkTaskManager* _chunkTaskManager;
 
 	uint8_t _renderDistance;
@@ -28,8 +28,8 @@ private:
 	glm::ivec2 _centerChunk;
 
 public:
-	std::array<Chunk*, _maxJobs> _dataGenOutput;
-	std::array<Chunk*, _maxJobs> _meshGenOutput;
+	std::array<std::shared_ptr<Chunk>, _maxJobs> _dataGenOutput;
+	std::array<glm::ivec2*, _maxJobs> _meshGenOutput;
 	std::queue<glm::ivec2> _chunksToLoad;
 	
 	unsigned int _textureID;

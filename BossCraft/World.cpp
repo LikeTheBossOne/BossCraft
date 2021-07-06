@@ -26,11 +26,11 @@ void World::Init(Camera* mainCamera)
 	_mainCamera = mainCamera;
 
 	_centerChunk = glm::ivec2(0, 0);
-	_renderDistance = 15;
+	_renderDistance = 24;
 	_chunkOrigin = glm::ivec2(-_renderDistance, -_renderDistance);
 
 	unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
-	_chunks = std::unordered_map<glm::ivec2, Chunk*>();
+	_chunks = std::unordered_map<glm::ivec2, std::shared_ptr<Chunk>>();
 
 	_chunkTaskManager = new ChunkTaskManager(this);
 	_dataGenOutput.fill(NULL);
@@ -80,22 +80,20 @@ void World::SetCenter(glm::vec3 blockPos)
 
 void World::Update(float dt)
 {
-	auto t1 = std::chrono::high_resolution_clock::now();
-	std::cout << "start tick here" << std::endl;
 	// First Check output arrays for new data
 
 		for (unsigned int i = 0; i < _maxJobs; i++)
 		{
 			if (_dataGenOutput[i] != NULL)
 			{
-				Chunk* chunk = _dataGenOutput[i];
+				std::shared_ptr<Chunk> chunk = _dataGenOutput[i];
 				_dataGenOutput[i] = NULL;
 
-				//_chunks[chunk->_chunkPos] = chunk;
+				_chunks[chunk->_chunkPos] = chunk;
 
 				// If a chunk data genned, it now needs a mesh generated, so queue that.
 				//TODO: Ensure a mesh to be genned has all of its neighbors data genned
-				std::array<Chunk*, 4> neighbors{};
+				std::array<std::shared_ptr<Chunk>, 4> neighbors{};
 				glm::ivec2 chunkPos = chunk->_chunkPos;
 				std::array<glm::ivec2, 4> poses = {
 					glm::ivec2(chunkPos[0] + 1, chunkPos[1]),
@@ -117,7 +115,6 @@ void World::Update(float dt)
 				}
 
 				chunk->GLLoad();
-				//auto t = new std::thread(&Chunk::GenerateMesh, chunk, neighbors, i);
 				JobSystem::Execute([chunk, neighbors, i] {chunk->GenerateMesh(neighbors, i); });
 			}
 		}
@@ -127,24 +124,15 @@ void World::Update(float dt)
 		{
 			if (_meshGenOutput[i] != NULL)
 			{
-				Chunk* chunk = _meshGenOutput[i];
+				std::shared_ptr<Chunk> chunk = _chunks[*_meshGenOutput[i]];
 				_meshGenOutput[i] = NULL;
 				chunk->BufferMesh();
-				_chunks[chunk->_chunkPos] = chunk;
+				//_chunks[chunk->_chunkPos] = chunk;
 			}
 		}
-
-		auto t3 = std::chrono::high_resolution_clock::now();
 	
 	CreateLoadChunksTasks();
-	auto t4 = std::chrono::high_resolution_clock::now();
 	Render();
-	auto t5 = std::chrono::high_resolution_clock::now();
-	//JobSystem::Wait();
-	/*std::cout << "t1->t2: " << std::chrono::duration<float, std::chrono::milliseconds::period>(t1 - t2).count() << std::endl;
-	std::cout << "t2->t3: " << std::chrono::duration<float, std::chrono::milliseconds::period>(t2 - t3).count() << std::endl;
-	std::cout << "t3->t4: " << std::chrono::duration<float, std::chrono::milliseconds::period>(t3 - t4).count() << std::endl;
-	std::cout << "t4->t5: " << std::chrono::duration<float, std::chrono::milliseconds::period>(t4 - t5).count() << std::endl;*/
 }
 
 void World::Render()
@@ -167,7 +155,7 @@ void World::Render()
 		for (int z = _chunkOrigin[1]; z < _chunkOrigin[1] + (_renderDistance * 2) + 1; z++)
 		{
 			glm::ivec2 pos = glm::ivec2(x, z);
-			Chunk* chunk = NULL;
+			std::shared_ptr<Chunk> chunk = NULL;
 			if (_chunks.find(pos) != _chunks.end() && (chunk = _chunks[pos]) != NULL)
 			{
 				chunk->RenderMesh(_shader);
@@ -185,7 +173,7 @@ uint8_t World::GetBlockAtAbsPos(glm::ivec3 blockPos)
 	glm::ivec2 chunkPos = BlockPosToAbsChunkPos(blockPos);
 
 	// Get block's position inside of the chunk
-	Chunk* chunk = _chunks[chunkPos];
+	std::shared_ptr<Chunk> chunk = _chunks[chunkPos];
 	glm::vec3 pos = glm::vec3(blockPos.x - (chunkPos[0] * CHUNK_WIDTH), blockPos.y, blockPos.z - (chunkPos[1] * CHUNK_WIDTH));
 
 	//if (pos.x <= 0 || pos.x >= CHUNK_WIDTH || pos.z <= 0 || pos.z >= CHUNK_WIDTH) return 0;
@@ -228,10 +216,10 @@ void World::CreateLoadChunksTasks()
 		glm::ivec2 pos = _chunksToLoad.front();
 		_chunksToLoad.pop();
 
-		Chunk** outputArr = &_dataGenOutput[count];
+		std::shared_ptr<Chunk>* outputArr = &_dataGenOutput[count];
 		JobSystem::Execute([this, pos, outputArr]
 			{
-				Chunk* chunkToCreate = new Chunk(pos, this);
+				std::shared_ptr<Chunk> chunkToCreate = std::make_shared<Chunk>(pos, this);
 				chunkToCreate->LoadData();
 				
 				while (*outputArr != NULL)

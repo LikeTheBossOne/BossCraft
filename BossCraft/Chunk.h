@@ -44,7 +44,7 @@ public:
 #pragma region Job Thread
 
 	void LoadData();
-	void GenerateMesh(std::array<Chunk*, 4> neighbors, unsigned int outputIdx);
+	void GenerateMesh(std::array<std::shared_ptr<Chunk>, 4> neighbors, unsigned int outputIdx);
 	
 #pragma endregion
 
