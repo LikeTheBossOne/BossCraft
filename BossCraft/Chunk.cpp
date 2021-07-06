@@ -46,13 +46,14 @@ Chunk::Chunk(glm::ivec2 chunkPos, World* owningWorld) : _chunkPos(chunkPos), _wo
 
 	//glBindVertexArray(0);
 
+	_indexCount = 0;
 	_mesh = new ChunkMesh
 	{
 		0,
 		0,
 		0,
-		(float*)malloc(sizeof(buffers.data)),
-		(uint16_t*)malloc(sizeof(buffers.indices)),
+		(float*)malloc(sizeof(float) * (CHUNK_VOLUME) * 8 * 5),
+		(uint16_t*)malloc((CHUNK_VOLUME) * 36 * sizeof(uint16_t)),
 	};
 }
 
@@ -101,15 +102,15 @@ void Chunk::LoadData()
 		_mesh->indicesIndex = 0;
 
 		//TODO: In the future, find a better way then mem-copying all of buffers.data. Maybe malloc would be better
-		memcpy(_mesh->dataBuffer, buffers.data, sizeof(buffers.data));
-		memcpy(_mesh->indexBuffer, buffers.indices, sizeof(buffers.indices));
+		//memcpy(_mesh->dataBuffer, buffers.data, sizeof(buffers.data));
+		//memcpy(_mesh->indexBuffer, buffers.indices, sizeof(buffers.indices));
 
 		// Unlock after use
 		_isDirty = false;
 	}
 }
 
-void Chunk::GenerateMesh(std::array<std::shared_ptr<Chunk>, 4> neighbors, unsigned int outputIdx)
+void Chunk::GenerateMesh(std::array<Chunk*, 4> neighbors, unsigned int outputIdx)
 {
 	// Generate Mesh
 	for (unsigned x = 0; x < CHUNK_WIDTH; x++)
@@ -139,9 +140,8 @@ void Chunk::GenerateMesh(std::array<std::shared_ptr<Chunk>, 4> neighbors, unsign
 						}
 						else
 						{
-							World* world = _world;
 							glm::ivec3 wNeighbor = wPos + dirVec;
-
+							
 							if (_world->BlockInRenderDistance(wNeighbor))
 							{
 								visible = true;
@@ -192,9 +192,9 @@ void Chunk::GenerateMesh(std::array<std::shared_ptr<Chunk>, 4> neighbors, unsign
 			}
 		}
 	}
-	std::cout << "Mesh" << std::endl;
+	//std::cout << "Mesh" << std::endl;
 	auto& output = _world->_meshGenOutput;
-	output[outputIdx] = &_chunkPos;//std::shared_ptr<Chunk>(this);
+	output[outputIdx] = this;//std::shared_ptr<Chunk>(this);
 }
 
 void Chunk::GLLoad()
@@ -222,23 +222,24 @@ void Chunk::GLLoad()
 /**
  * Renders the ChunkMesh. MUST BE RUN ON MAIN THREAD
  */
-void Chunk::RenderMesh()
+void Chunk::RenderMesh(Shader* shader)
 {
 	if (!_meshIsLoaded)
 	{
 		return;
 	}
 	
-	Shader* shader = _world->GetShader();
+	//Shader* shader = _world->GetShader();
 	shader->Use();
 	glm::mat4 model = glm::mat4(1.f);
 	model = glm::translate(model, glm::vec3(_chunkPos[0] * 1.f * CHUNK_WIDTH, 0, _chunkPos[1] * 1.f * CHUNK_WIDTH));
 
 	shader->UniSetMat4f("model", model);
+
 	
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glDrawElements(GL_TRIANGLES, _mesh->indicesIndex, GL_UNSIGNED_SHORT, 0);
+	glDrawElements(GL_TRIANGLES, _indexCount, GL_UNSIGNED_SHORT, 0);
 	glBindVertexArray(0);
 }
 
@@ -264,11 +265,13 @@ void Chunk::AddFaceToMesh(glm::vec3 blockPos, FaceDirection direction)
 
 void Chunk::BufferMesh()
 {
+	_indexCount = _mesh->indicesIndex;
+	
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, _mesh->dataIndex * sizeof(float), _mesh->dataBuffer, GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, _mesh->indicesIndex * sizeof(uint16_t), _mesh->indexBuffer, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, _indexCount * sizeof(uint16_t), _mesh->indexBuffer, GL_STATIC_DRAW);
 }
 
 

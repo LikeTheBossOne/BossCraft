@@ -21,7 +21,7 @@ void ChunkTaskManager::AddDataGenTask(glm::ivec2 chunkPosToCreate)
 				if (output[threadNum] == NULL)
 				{
 					found = true;
-					output[threadNum] = chunkToCreate;
+					//output[threadNum] = chunkToCreate;
 				}
 			}
 		/*while (!found)

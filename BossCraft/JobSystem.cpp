@@ -16,7 +16,7 @@ void JobSystem::Init()
 {
 	_finishedLabel.store(0);
 	unsigned int  numCores = std::thread::hardware_concurrency();
-	_numThreads = max(1u, numCores);
+	_numThreads = max(1u, numCores - 1);
 
 	// Create all our worker threads while immediately starting them:
 	for (uint32_t threadID = 0; threadID < _numThreads; ++threadID)
@@ -71,7 +71,7 @@ void JobSystem::Init()
 void JobSystem::Execute(const std::function<void()>& job)
 {
 	_currentLabel++;
-	
+
 	while (!_jobPool.Enqueue(job))
 	{
 		Poll();

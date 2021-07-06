@@ -28,6 +28,7 @@ class Chunk
 	friend class World;
 private:
 	unsigned int VAO, VBO, EBO;
+	unsigned int _indexCount;
 	ChunkMesh* _mesh;
 	
 	World* _world;
@@ -43,13 +44,13 @@ public:
 #pragma region Job Thread
 
 	void LoadData();
-	void GenerateMesh(std::array<std::shared_ptr<Chunk>, 4> neighbors, unsigned int outputIdx);
+	void GenerateMesh(std::array<Chunk*, 4> neighbors, unsigned int outputIdx);
 	
 #pragma endregion
 
 #pragma region Main Thread Only
 	void GLLoad();
-	void RenderMesh();
+	void RenderMesh(Shader* shader);
 
 #pragma endregion
 	
