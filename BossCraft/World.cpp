@@ -17,9 +17,6 @@ World::World(Shader* shader, unsigned int textureID) : _shader(shader), _texture
 World::World(Shader* shader, unsigned int textureID, Camera* mainCamera) : _shader(shader), _textureID(textureID)
 {
 	Init(mainCamera);
-	/*memset(_chunks, 0, sizeof(Chunk*) * totalChunks);
-	
-	LoadNewChunks();*/
 }
 
 void World::Init(Camera* mainCamera)
@@ -29,7 +26,7 @@ void World::Init(Camera* mainCamera)
 	_mainCamera = mainCamera;
 
 	_centerChunk = glm::ivec2(0, 0);
-	_renderDistance = 8;
+	_renderDistance = 15;
 	_chunkOrigin = glm::ivec2(-_renderDistance, -_renderDistance);
 
 	unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
@@ -63,8 +60,7 @@ void World::SetCenter(glm::vec3 blockPos)
 		for (int z = oldOrigin[1]; z < oldOrigin[1] + (_renderDistance * 2) + 1; z++)
 		{
 			glm::ivec2 chunkPos = glm::ivec2(x, z);
-			std::shared_ptr<Chunk> oldChunk = NULL;
-			if (_chunks.find(chunkPos) == _chunks.end() || (oldChunk = _chunks[chunkPos]) == NULL)
+			if (_chunks.find(chunkPos) == _chunks.end() || (_chunks[chunkPos]) == NULL)
 			{
 				continue;
 			}
@@ -73,7 +69,7 @@ void World::SetCenter(glm::vec3 blockPos)
 				if (!ChunkInRenderDistance(chunkPos))
 				{
 					//delete oldChunk;
-					_chunks.erase(chunkPos);
+					//_chunks.erase(chunkPos);
 					//_chunks[chunkPos] = NULL;
 				}
 			}
@@ -83,58 +79,62 @@ void World::SetCenter(glm::vec3 blockPos)
 }
 
 void World::Update(float dt)
-{	
+{
+	std::cout << "start tick here" << std::endl;
 	// First Check output arrays for new data
-	for (unsigned int i = 0; i < _maxJobs; i++)
-	{
-		if (_dataGenOutput[i] != NULL)
+
+		for (unsigned int i = 0; i < _maxJobs; i++)
 		{
-			std::shared_ptr<Chunk> chunk = _dataGenOutput[i];
-			_dataGenOutput[i] = NULL;
-
-			_chunks[chunk->_chunkPos] = chunk;
-
-			// If a chunk data genned, it now needs a mesh generated, so queue that.
-			//TODO: Ensure a mesh to be genned has all of its neighbors data genned
-			std::array<std::shared_ptr<Chunk>, 4> neighbors;
-			glm::ivec2 chunkPos = chunk->_chunkPos;
-			std::array<glm::ivec2, 4> poses = {
-				glm::ivec2(chunkPos[0] + 1, chunkPos[1]),
-				glm::ivec2(chunkPos[0] - 1, chunkPos[1]),
-				glm::ivec2(chunkPos[0], chunkPos[1] + 1),
-				glm::ivec2(chunkPos[0], chunkPos[1] - 1)
-			};
-			for (unsigned int posIdx = 0; posIdx < 4; posIdx++)
+			if (_dataGenOutput[i] != NULL)
 			{
-				glm::ivec2 pos = poses[posIdx];
-				if (_chunks.find(pos) != _chunks.end() && _chunks[pos] != NULL)
-				{
-					neighbors[posIdx] = _chunks[pos];
-				}
-				else
-				{
-					neighbors[posIdx] = NULL;
-				}
-			}
-			
-			chunk->GLLoad();
-			JobSystem::Execute([chunk, neighbors, i] {chunk->GenerateMesh(neighbors, i); });
-		}
-	}
+				std::shared_ptr<Chunk> chunk = _dataGenOutput[i];
+				_dataGenOutput[i] = NULL;
 
-	for (unsigned int i = 0; i < _maxJobs; i++)
-	{
-		if (_meshGenOutput[i] != NULL)
-		{
-			glm::ivec2* chunkPos = _meshGenOutput[i];
-			_meshGenOutput[i] = NULL;
-			
-			_chunks[*chunkPos]->BufferMesh();
+				_chunks[chunk->_chunkPos] = chunk;
+
+				// If a chunk data genned, it now needs a mesh generated, so queue that.
+				//TODO: Ensure a mesh to be genned has all of its neighbors data genned
+				std::array<std::shared_ptr<Chunk>, 4> neighbors;
+				glm::ivec2 chunkPos = chunk->_chunkPos;
+				std::array<glm::ivec2, 4> poses = {
+					glm::ivec2(chunkPos[0] + 1, chunkPos[1]),
+					glm::ivec2(chunkPos[0] - 1, chunkPos[1]),
+					glm::ivec2(chunkPos[0], chunkPos[1] + 1),
+					glm::ivec2(chunkPos[0], chunkPos[1] - 1)
+				};
+				for (unsigned int posIdx = 0; posIdx < 4; posIdx++)
+				{
+					glm::ivec2 pos = poses[posIdx];
+					if (_chunks.find(pos) != _chunks.end() && _chunks[pos] != NULL)
+					{
+						neighbors[posIdx] = _chunks[pos];
+					}
+					else
+					{
+						neighbors[posIdx] = NULL;
+					}
+				}
+
+				chunk->GLLoad();
+				//auto t = new std::thread(&Chunk::GenerateMesh, chunk, neighbors, i);
+				JobSystem::Execute([chunk, neighbors, i] {chunk->GenerateMesh(neighbors, i); });
+			}
 		}
-	}
+
+		for (unsigned int i = 0; i < _maxJobs; i++)
+		{
+			if (_meshGenOutput[i] != NULL)
+			{
+				glm::ivec2* chunkPos = _meshGenOutput[i];
+				_meshGenOutput[i] = NULL;
+
+				_chunks[*chunkPos]->BufferMesh();
+			}
+		}
+	
 	CreateLoadChunksTasks();
 	Render();
-	JobSystem::Wait();
+	//JobSystem::Wait();
 }
 
 void World::Render()
@@ -220,6 +220,7 @@ void World::CreateLoadChunksTasks()
 				{
 					
 				}
+				std::cout << "data" << std::endl;
 				this->_dataGenOutput[count] = chunkToCreate;
 			});
 		

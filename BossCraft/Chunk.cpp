@@ -192,6 +192,7 @@ void Chunk::GenerateMesh(std::array<std::shared_ptr<Chunk>, 4> neighbors, unsign
 			}
 		}
 	}
+	std::cout << "Mesh" << std::endl;
 	auto& output = _world->_meshGenOutput;
 	output[outputIdx] = &_chunkPos;//std::shared_ptr<Chunk>(this);
 }

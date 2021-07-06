@@ -166,12 +166,12 @@ void RenderLoop(GLFWwindow* window)
 		dt = std::chrono::duration<float, std::chrono::seconds::period>(stopTime - startTime).count();
 
 		fpsCounts++;
-		if (fpsCounts > 6)
-		{
-			std::cout << dt * 1000 << std::endl;
+		//if (fpsCounts > 6)
+		//{
+			//std::cout << dt * 1000 << std::endl;
 			
 			fpsCounts = 0;
-		}
+		//}
 		
 	}
 }
