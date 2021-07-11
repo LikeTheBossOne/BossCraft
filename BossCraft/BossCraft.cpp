@@ -7,6 +7,7 @@
 #include <chrono>
 #include "GlobalEventManager.h"
 #include "JobSystem.h"
+#include "FastNoiseLite.h"
 
 unsigned int SCREEN_WIDTH = 800;
 unsigned int SCREEN_HEIGHT = 600;
@@ -78,6 +79,7 @@ GLFWwindow* CreateWindow()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glfwSwapInterval(0); // Disable VSync
 
 	return window;
 }
@@ -138,24 +140,24 @@ void RenderLoop(GLFWwindow* window)
 
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		{
-			world->GetCamera()->ProcessKeyBoard(CameraDirection::Forward, .1);
+			world->GetCamera()->ProcessKeyBoard(CameraDirection::Forward, 10, dt);
 		}
 		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 		{
-			world->GetCamera()->ProcessKeyBoard(CameraDirection::Backward, .1);
+			world->GetCamera()->ProcessKeyBoard(CameraDirection::Backward, 10, dt);
 		}
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 		{
-			world->GetCamera()->ProcessKeyBoard(CameraDirection::Left, .1);
+			world->GetCamera()->ProcessKeyBoard(CameraDirection::Left, 10, dt);
 		}
 		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		{
-			world->GetCamera()->ProcessKeyBoard(CameraDirection::Right, .1);
+			world->GetCamera()->ProcessKeyBoard(CameraDirection::Right, 10, dt);
 		}
 
 		GlobalEventManager::ProcessEvents();
 		
-		world->Update(0.f);
+		world->Update(dt);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -179,7 +181,7 @@ void RenderLoop(GLFWwindow* window)
 int main()
 {
     std::cout << "Hello World!\n";
-
+	
 	GlobalEventManager::Init();
 	JobSystem::Init();
 	

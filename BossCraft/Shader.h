@@ -11,9 +11,14 @@ class Shader
 {
 public:
 	unsigned int id;
+	GLint _viewMatrixLoc;
+	GLint _modelLoc;
 
 	Shader(const char* vertexPath, const char* fragmentPath)
 	{
+		_viewMatrixLoc = -1;
+		_modelLoc = -1;
+		
 		std::string vertexCode;
 		std::string fragmentCode;
 		std::ifstream vShaderFile;
@@ -120,5 +125,22 @@ public:
 	void UniSetMat4f(const std::string& name, glm::mat4 value)
 	{
 		glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
+	}
+
+	void SetViewMatrix(glm::mat4 value)
+	{
+		if (_viewMatrixLoc == -1)
+		{
+			_viewMatrixLoc = glGetUniformLocation(id, "view");
+		}
+		glUniformMatrix4fv(_viewMatrixLoc, 1, GL_FALSE, glm::value_ptr(value));
+	}
+	void SetModel(glm::mat4 value)
+	{
+		if (_modelLoc == -1)
+		{
+			_modelLoc = glGetUniformLocation(id, "model");
+		}
+		glUniformMatrix4fv(_modelLoc, 1, GL_FALSE, glm::value_ptr(value));
 	}
 };

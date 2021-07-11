@@ -39,10 +39,16 @@ public:
 		if (_tail != _head)
 		{
 			item = _data[_tail];
+			_data[_tail] = NULL;
 			_tail = (_tail + 1) % capacity;
 			result = true;
 		}
 		_lock.unlock();
 		return result;
+	}
+
+	bool Empty()
+	{
+		return _head == _tail;
 	}
 };

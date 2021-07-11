@@ -27,23 +27,23 @@ glm::mat4 Camera::GetViewMatrix()
     return glm::lookAt(_position, _position + _front, _up);
 }
 
-void Camera::ProcessKeyBoard(CameraDirection direction, float velocity)
+void Camera::ProcessKeyBoard(CameraDirection direction, float velocity, float dt)
 {
     if (direction == CameraDirection::Forward)
     {
-        _position += _front * velocity;
+        _position += _front * velocity * dt;
     }
     if (direction == CameraDirection::Backward)
     {
-        _position -= _front * velocity;
+        _position -= _front * velocity * dt;
     }
     if (direction == CameraDirection::Left)
     {
-        _position -= _right * velocity;
+        _position -= _right * velocity * dt;
     }
     if (direction == CameraDirection::Right)
     {
-        _position += _right * velocity;
+        _position += _right * velocity * dt;
     }
 
     assert(_world != nullptr);

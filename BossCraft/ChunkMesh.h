@@ -2,6 +2,22 @@
 
 struct ChunkMesh
 {
+	ChunkMesh()
+	{
+		vertexCount = 0;
+		dataIndex = 0;
+		indicesIndex = 0;
+
+		dataBuffer = new float[(CHUNK_VOLUME) * 4 * 6 * 6];
+		indexBuffer = new uint16_t[(CHUNK_VOLUME) * 6 * 6];
+	}
+	
+	~ChunkMesh()
+	{
+		delete[] dataBuffer;
+		delete[] indexBuffer;
+	}
+	
 	unsigned int vertexCount;
 	unsigned int dataIndex;
 	unsigned int indicesIndex;

@@ -1,13 +1,17 @@
 #pragma once
 #define GLM_ENABLE_EXPERIMENTAL
 #include <array>
+#include <FastNoiseLite.h>
 #include <queue>
 
 #include "glm/gtx/hash.hpp"
 #include "Shader.h"
 #include <unordered_map>
+
+#include "ConcurrentRingBuffer.h"
 #include "IEventHandler.h"
 
+struct ChunkMesh;
 class ChunkTaskManager;
 class Chunk;
 class ChunkGenerator;
@@ -21,16 +25,20 @@ private:
 	Shader* _shader;
 
 	std::unordered_map<glm::ivec2, std::shared_ptr<Chunk>> _chunks;
-	ChunkTaskManager* _chunkTaskManager;
+	
 
 	uint8_t _renderDistance;
+	uint8_t _extraLoadDistance;
 	glm::ivec2 _chunkOrigin;
 	glm::ivec2 _centerChunk;
 
 public:
-	std::array<std::shared_ptr<Chunk>, _maxJobs> _dataGenOutput;
-	std::array<glm::ivec2*, _maxJobs> _meshGenOutput;
+	FastNoiseLite* _noiseGenerator;
+	ConcurrentRingBuffer<std::shared_ptr<Chunk>, _maxJobs * 16> _dataGenOutput{};
+	ConcurrentRingBuffer<std::pair<glm::ivec2, ChunkMesh*>*, _maxJobs * 16> _meshGenOutput{};
+	ConcurrentRingBuffer<std::array<unsigned int, 3>*, _maxJobs * 16> _chunkUnload{};
 	std::queue<glm::ivec2> _chunksToLoad;
+	std::queue<glm::ivec2> _chunksToGenMesh;
 	
 	unsigned int _textureID;
 
@@ -53,11 +61,14 @@ private:
 	
 	void LoadNewChunks();
 	void CreateLoadChunksTasks();
+	void CreateGenMeshTasks();
+	bool CreateSingleGenMeshTask(glm::ivec2 pos);
 	
 	unsigned int BlockPosToRelChunkIndex(glm::ivec3 blockPos);
 	unsigned int AbsChunkPosToRelIndex(glm::ivec2 chunkPos);
 	unsigned int RelChunkPosToRelIndex(glm::ivec2 chunkPos);
 	bool ChunkInRenderDistance(glm::ivec2 chunkPos);
+	bool ChunkInLoadDistance(glm::ivec2 chunkPos);
 	glm::ivec2 RelChunkIndexToAbsChunkPos(unsigned int index);
 	
 public:

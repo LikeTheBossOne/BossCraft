@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "EventBase.h"
 #include "ChunkLoadedEvent.h"
+#include "ChunkMesh.h"
 #include "ChunkTaskManager.h"
 #include "NeighborChunks.h"
 #include "GlobalEventManager.h"
@@ -21,21 +22,25 @@ World::World(Shader* shader, unsigned int textureID, Camera* mainCamera) : _shad
 
 void World::Init(Camera* mainCamera)
 {
-	GlobalEventManager::SubscribeToEvent(this, EventType::ChunkLoaded);
-	
 	_mainCamera = mainCamera;
 
 	_centerChunk = glm::ivec2(0, 0);
-	_renderDistance = 24;
+	_renderDistance = 10;
+	_extraLoadDistance = 1;
 	_chunkOrigin = glm::ivec2(-_renderDistance, -_renderDistance);
 
 	unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
 	_chunks = std::unordered_map<glm::ivec2, std::shared_ptr<Chunk>>();
 
-	_chunkTaskManager = new ChunkTaskManager(this);
-	_dataGenOutput.fill(NULL);
-	_meshGenOutput.fill(NULL);
+	_noiseGenerator = new FastNoiseLite;
 	_chunksToLoad = std::queue<glm::ivec2>();
+	_chunksToGenMesh = std::queue<glm::ivec2>();
+
+
+	_shader->Use();
+	glm::mat4 projection = glm::perspective(glm::radians(_mainCamera->_fov), 800.f / 600.f, 0.1f, 300.0f);
+	_shader->UniSetMat4f("projection", projection);
+
 	
 	LoadNewChunks();
 }
@@ -54,25 +59,20 @@ void World::SetCenter(glm::vec3 blockPos)
 	_chunkOrigin += offset;
 	_centerChunk = newCenterChunk;
 
+	auto it = _chunks.begin();
 	
-	for (int x = oldOrigin.x; x < oldOrigin.x + (_renderDistance * 2) + 1; x++)
+	while (it != _chunks.end())
 	{
-		for (int z = oldOrigin[1]; z < oldOrigin[1] + (_renderDistance * 2) + 1; z++)
+		if (!ChunkInLoadDistance(it->first))
 		{
-			glm::ivec2 chunkPos = glm::ivec2(x, z);
-			if (_chunks.find(chunkPos) == _chunks.end() || (_chunks[chunkPos]) == NULL)
-			{
-				continue;
-			}
-			else
-			{
-				if (!ChunkInRenderDistance(chunkPos))
-				{
-					//delete oldChunk;
-					//_chunks.erase(chunkPos);
-					//_chunks[chunkPos] = NULL;
-				}
-			}
+			//it->second->GLUnload();
+			_chunks[it->first] = NULL;
+			it = _chunks.erase(it);
+			//_chunks[chunkPos] = NULL;
+		}
+		else
+		{
+			it++;
 		}
 	}
 	LoadNewChunks();
@@ -81,75 +81,53 @@ void World::SetCenter(glm::vec3 blockPos)
 void World::Update(float dt)
 {
 	// First Check output arrays for new data
+	std::shared_ptr<Chunk> outChunk;
+	while (_dataGenOutput.Dequeue(outChunk))
+	{
+		_chunks[outChunk->_chunkPos] = outChunk;
+		outChunk->GLLoad();
+		_chunksToGenMesh.emplace(outChunk->_chunkPos);
+	}
 
-		for (unsigned int i = 0; i < _maxJobs; i++)
+	std::pair<glm::ivec2, ChunkMesh*>* outMesh;
+	while (_meshGenOutput.Dequeue(outMesh))
+	{
+		glm::ivec2 pos = outMesh->first;
+		std::shared_ptr<Chunk> chunk = nullptr;
+		if (_chunks.find(pos) != _chunks.end() && (chunk = _chunks[pos]) != NULL)
 		{
-			if (_dataGenOutput[i] != NULL)
-			{
-				std::shared_ptr<Chunk> chunk = _dataGenOutput[i];
-				_dataGenOutput[i] = NULL;
+			delete chunk->_mesh;
 
-				_chunks[chunk->_chunkPos] = chunk;
-
-				// If a chunk data genned, it now needs a mesh generated, so queue that.
-				//TODO: Ensure a mesh to be genned has all of its neighbors data genned
-				std::array<std::shared_ptr<Chunk>, 4> neighbors{};
-				glm::ivec2 chunkPos = chunk->_chunkPos;
-				std::array<glm::ivec2, 4> poses = {
-					glm::ivec2(chunkPos[0] + 1, chunkPos[1]),
-					glm::ivec2(chunkPos[0] - 1, chunkPos[1]),
-					glm::ivec2(chunkPos[0], chunkPos[1] + 1),
-					glm::ivec2(chunkPos[0], chunkPos[1] - 1)
-				};
-				for (unsigned int posIdx = 0; posIdx < 4; posIdx++)
-				{
-					glm::ivec2 pos = poses[posIdx];
-					if (_chunks.find(pos) != _chunks.end() && _chunks[pos] != NULL)
-					{
-						neighbors[posIdx] = _chunks[pos];
-					}
-					else
-					{
-						neighbors[posIdx] = NULL;
-					}
-				}
-
-				chunk->GLLoad();
-				JobSystem::Execute([chunk, neighbors, i] {chunk->GenerateMesh(neighbors, i); });
-			}
+			chunk->_mesh = outMesh->second;
+			chunk->BufferMesh();
 		}
+	}
 
-		auto t2 = std::chrono::high_resolution_clock::now();
-		for (unsigned int i = 0; i < _maxJobs; i++)
-		{
-			if (_meshGenOutput[i] != NULL)
-			{
-				std::shared_ptr<Chunk> chunk = _chunks[*_meshGenOutput[i]];
-				_meshGenOutput[i] = NULL;
-				chunk->BufferMesh();
-				//_chunks[chunk->_chunkPos] = chunk;
-			}
-		}
-	
+	std::array<unsigned int, 3>* outBuffers;
+	while (_chunkUnload.Dequeue(outBuffers))
+	{
+		// Delete VAO
+		glDeleteVertexArrays(1, &(*outBuffers)[0]);
+		glDeleteBuffers(1, &(*outBuffers)[1]);
+		glDeleteBuffers(1, &(*outBuffers)[2]);
+	}
+
+	CreateGenMeshTasks();
 	CreateLoadChunksTasks();
 	Render();
 }
 
 void World::Render()
 {
-	auto t1 = std::chrono::high_resolution_clock::now();
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, _textureID);
 
-
-	auto t2 = std::chrono::high_resolution_clock::now();
-	glm::mat4 projection = glm::perspective(glm::radians(_mainCamera->_fov), 800.f / 600.f, 0.1f, 300.0f);
-
-	auto t3 = std::chrono::high_resolution_clock::now();
+	
 	_shader->Use();
-	_shader->UniSetMat4f("view", _mainCamera->GetViewMatrix());
-	_shader->UniSetMat4f("projection", projection);
-	auto t4 = std::chrono::high_resolution_clock::now();
+	//_shader->UniSetMat4f("view", _mainCamera->GetViewMatrix());
+	_shader->SetViewMatrix(_mainCamera->GetViewMatrix());
+	
+	
 	for (int x = _chunkOrigin[0]; x < _chunkOrigin[0] + (_renderDistance * 2) + 1; x++)
 	{
 		for (int z = _chunkOrigin[1]; z < _chunkOrigin[1] + (_renderDistance * 2) + 1; z++)
@@ -161,7 +139,6 @@ void World::Render()
 				chunk->RenderMesh(_shader);
 			}
 		}
-		auto t5 = std::chrono::high_resolution_clock::now();
 	}
 }
 
@@ -193,9 +170,9 @@ Shader* World::GetShader()
 
 void World::LoadNewChunks()
 {
-	for (int x = _chunkOrigin[0]; x < _chunkOrigin[0] + (_renderDistance * 2) + 1; x++)
+	for (int x = _chunkOrigin[0] - _extraLoadDistance; x < _chunkOrigin[0] + (_renderDistance * 2) + 1 + _extraLoadDistance; x++)
 	{
-		for (int z = _chunkOrigin[1]; z < _chunkOrigin[1] + (_renderDistance * 2) + 1; z++)
+		for (int z = _chunkOrigin[1] - _extraLoadDistance; z < _chunkOrigin[1] + (_renderDistance * 2) + 1 + _extraLoadDistance; z++)
 		{
 			glm::ivec2 pos = glm::ivec2(x, z);
 			std::shared_ptr<Chunk> chunk;
@@ -210,29 +187,78 @@ void World::LoadNewChunks()
 
 void World::CreateLoadChunksTasks()
 {
-	int count = 0;
+	size_t count = 0;
 	while (count < _maxJobs && !_chunksToLoad.empty())
 	{
 		glm::ivec2 pos = _chunksToLoad.front();
 		_chunksToLoad.pop();
 
-		std::shared_ptr<Chunk>* outputArr = &_dataGenOutput[count];
-		JobSystem::Execute([this, pos, outputArr]
+		JobSystem::Execute([this, pos]
 			{
 				std::shared_ptr<Chunk> chunkToCreate = std::make_shared<Chunk>(pos, this);
 				chunkToCreate->LoadData();
-				
-				while (*outputArr != NULL)
-				{
-					
-				}
-				//std::cout << "data" << std::endl;
-				*outputArr = chunkToCreate;
+				this->_dataGenOutput.Enqueue(chunkToCreate);
 				
 			});
 		
 		count++;
 	}
+}
+
+void World::CreateGenMeshTasks()
+{
+	std::vector<glm::ivec2> outsideRange;
+	while (!_chunksToGenMesh.empty())
+	{
+		glm::ivec2 pos = _chunksToGenMesh.front();
+		_chunksToGenMesh.pop();
+
+		if (!ChunkInRenderDistance(pos))
+		{
+			outsideRange.emplace_back(pos);
+			continue;
+		}
+		
+		if (_chunks.find(pos) != _chunks.end())
+		{
+			if (!CreateSingleGenMeshTask(pos))
+			{
+				outsideRange.emplace_back(pos);
+			}
+		}
+	}
+
+	for (auto pos : outsideRange)
+	{
+		_chunksToGenMesh.emplace(pos);
+	}
+}
+
+bool World::CreateSingleGenMeshTask(glm::ivec2 pos)
+{
+	std::array<std::shared_ptr<Chunk>, 4> neighbors{};
+	std::array<glm::ivec2, 4> poses = {
+		glm::ivec2(pos[0] + 1, pos[1]),
+		glm::ivec2(pos[0] - 1, pos[1]),
+		glm::ivec2(pos[0], pos[1] + 1),
+		glm::ivec2(pos[0], pos[1] - 1)
+	};
+	for (unsigned int posIdx = 0; posIdx < 4; posIdx++)
+	{
+		glm::ivec2 pos = poses[posIdx];
+		if (_chunks.find(pos) != _chunks.end() && _chunks[pos] != NULL)
+		{
+			neighbors[posIdx] = _chunks[pos];
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	std::shared_ptr<Chunk> chunk = _chunks[pos];
+	JobSystem::Execute([chunk, neighbors] {chunk->GenerateMesh(neighbors); });
+	return true;
 }
 
 unsigned World::AbsChunkPosToRelIndex(glm::ivec2 chunkPos)
@@ -270,6 +296,14 @@ bool World::ChunkInRenderDistance(glm::ivec2 chunkPos)
 		(chunkPos[1] >= _centerChunk[1] - _renderDistance) &&
 		(chunkPos[0] <= _centerChunk[0] + _renderDistance) &&
 		(chunkPos[1] <= _centerChunk[1] + _renderDistance);
+}
+
+bool World::ChunkInLoadDistance(glm::ivec2 chunkPos)
+{
+	return (chunkPos[0] >= _centerChunk[0] - _renderDistance - _extraLoadDistance) &&
+		(chunkPos[1] >= _centerChunk[1] - _renderDistance - _extraLoadDistance) &&
+		(chunkPos[0] <= _centerChunk[0] + _renderDistance + _extraLoadDistance) &&
+		(chunkPos[1] <= _centerChunk[1] + _renderDistance + _extraLoadDistance);
 }
 
 glm::ivec2 World::RelChunkIndexToAbsChunkPos(unsigned index)

@@ -34,7 +34,7 @@ public:
 
     glm::mat4 GetViewMatrix();
 
-    void ProcessKeyBoard(CameraDirection direction, float velocity);
+    void ProcessKeyBoard(CameraDirection direction, float velocity, float dt);
 
     void ProcessMouseMovement(float xOffset, float yOffset, GLboolean constrainPitch);
 
