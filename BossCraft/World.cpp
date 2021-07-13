@@ -8,14 +8,15 @@
 #include "NeighborChunks.h"
 #include "GlobalEventManager.h"
 #include "JobSystem.h"
+#include "TextureAtlas.h"
 
 
-World::World(Shader* shader, unsigned int textureID) : _shader(shader), _textureID(textureID)
+World::World(Shader* shader, TextureAtlas* atlas) : _shader(shader), _textureAtlas(atlas)
 {
 	Init(new Camera(this, glm::vec3(0, 65, 0)));
 }
 
-World::World(Shader* shader, unsigned int textureID, Camera* mainCamera) : _shader(shader), _textureID(textureID)
+World::World(Shader* shader, TextureAtlas* atlas, Camera* mainCamera) : _shader(shader), _textureAtlas(atlas)
 {
 	Init(mainCamera);
 }
@@ -120,7 +121,7 @@ void World::Update(float dt)
 void World::Render()
 {
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, _textureID);
+	glBindTexture(GL_TEXTURE_2D, _textureAtlas->_textureID);
 
 	
 	_shader->Use();

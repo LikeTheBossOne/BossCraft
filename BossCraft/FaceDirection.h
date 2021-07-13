@@ -1,4 +1,5 @@
 #pragma once
+#include "glm/vec3.hpp"
 
 enum FaceDirection
 {

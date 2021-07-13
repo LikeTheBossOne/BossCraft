@@ -11,6 +11,7 @@
 #include "ConcurrentRingBuffer.h"
 #include "IEventHandler.h"
 
+class TextureAtlas;
 struct ChunkMesh;
 class ChunkTaskManager;
 class Chunk;
@@ -40,10 +41,10 @@ public:
 	std::queue<glm::ivec2> _chunksToLoad;
 	std::queue<glm::ivec2> _chunksToGenMesh;
 	
-	unsigned int _textureID;
+	TextureAtlas* _textureAtlas;
 
-	World(Shader* shader, unsigned int textureID, Camera* mainCamera);
-	World(Shader* shader, unsigned int textureID);
+	World(Shader* shader, TextureAtlas* atlas, Camera* mainCamera);
+	World(Shader* shader, TextureAtlas* atlas);
 
 	void SetCenter(glm::vec3 blockPos);
 	void Update(float dt);

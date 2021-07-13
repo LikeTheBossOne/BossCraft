@@ -5,9 +5,12 @@
 #include "World.h"
 #include "load_stb_image.h"
 #include <chrono>
+
+#include "BlockProvider.h"
 #include "GlobalEventManager.h"
 #include "JobSystem.h"
 #include "FastNoiseLite.h"
+#include "TextureAtlas.h"
 
 unsigned int SCREEN_WIDTH = 800;
 unsigned int SCREEN_HEIGHT = 600;
@@ -84,7 +87,7 @@ GLFWwindow* CreateWindow()
 	return window;
 }
 
-void LoadTexture(const char* pathToTexture, unsigned int* textureID, int rgba, int glRepeat)
+void LoadTextureAtlas(const char* pathToTexture, unsigned int* textureID, int rgba, int glRepeat, int* width, int* height)
 {
 	glGenTextures(1, textureID);
 	glBindTexture(GL_TEXTURE_2D, *textureID);
@@ -94,12 +97,12 @@ void LoadTexture(const char* pathToTexture, unsigned int* textureID, int rgba, i
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	int width, height, nrChannels;
-	unsigned char* data = stbi_load(pathToTexture, &width, &height, &nrChannels, 0);
+	int nrChannels;
+	unsigned char* data = stbi_load(pathToTexture, width, height, &nrChannels, 0);
 
 	if (data)
 	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, rgba, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, *width, *height, 0, rgba, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else
@@ -184,13 +187,16 @@ int main()
 	
 	GlobalEventManager::Init();
 	JobSystem::Init();
+	BlockProvider::Init();
 	
 	GLFWwindow* window = CreateWindow();
 
 	unsigned int textureID;
-	LoadTexture("Resources/textures/block/dirt.png", &textureID, GL_RGBA, GL_CLAMP_TO_EDGE);
+	int width, height;
+	//LoadTextureAtlas("Resources/atlas.png", &textureID, GL_RGBA, GL_CLAMP_TO_EDGE, &width, &height);
+	TextureAtlas* atlas = new TextureAtlas("Resources/atlas.png", 16, 16);
 	
-	world = new World(new Shader("Shaders\\vertex1.vs", "Shaders\\fragment1.fs"), textureID);
+	world = new World(new Shader("Shaders\\vertex1.vs", "Shaders\\fragment1.fs"), atlas);
 
 	RenderLoop(window);
 }

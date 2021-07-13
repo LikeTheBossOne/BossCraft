@@ -149,6 +149,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BlockProvider.cpp" />
     <ClCompile Include="BossCraft.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Chunk.cpp" />
@@ -156,10 +157,12 @@
     <ClCompile Include="glad.c" />
     <ClCompile Include="GlobalEventManager.cpp" />
     <ClCompile Include="JobSystem.cpp" />
+    <ClCompile Include="TextureAtlas.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BlockProvider.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CameraDirection.h" />
     <ClInclude Include="Chunk.h" />
@@ -176,6 +179,7 @@
     <ClInclude Include="NeighborChunks.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="stb_image.h" />
+    <ClInclude Include="TextureAtlas.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="World.h" />
   </ItemGroup>

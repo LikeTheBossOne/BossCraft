@@ -2,10 +2,13 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/mat4x4.hpp>
+
+#include "BlockProvider.h"
 #include "Shader.h"
 #include "Camera.h"
 #include "ChunkMesh.h"
 #include "FaceDirection.h"
+#include "TextureAtlas.h"
 #include "World.h"
 
 Chunk::Chunk(glm::ivec2 chunkPos, World* owningWorld) : _chunkPos(chunkPos), _world(owningWorld)
@@ -243,14 +246,17 @@ void Chunk::RenderMesh(Shader* shader)
 
 void Chunk::AddFaceToMesh(glm::vec3 blockPos, FaceDirection direction, ChunkMesh* mesh)
 {
+	TextureAtlas* atlas = _world->_textureAtlas;
+	unsigned char block = _data[PositionToIndex(blockPos)];
+	glm::vec2 texCoords = BlockProvider::GetBlockTextureLocation(block, direction);
 	for (int i = 0; i < 4; i++)
 	{
 		const float* vertex = &CUBE_VERTICES[CUBE_INDICES[(direction * 6) + UNIQUE_INDICES[i]] * 3];
 		mesh->dataBuffer[mesh->dataIndex++] = blockPos.x + vertex[0];
 		mesh->dataBuffer[mesh->dataIndex++] = blockPos.y + vertex[1];
 		mesh->dataBuffer[mesh->dataIndex++] = blockPos.z + vertex[2];
-		mesh->dataBuffer[mesh->dataIndex++] = CUBE_UVS[(i * 2) + 0];
-		mesh->dataBuffer[mesh->dataIndex++] = CUBE_UVS[(i * 2) + 1];
+		mesh->dataBuffer[mesh->dataIndex++] = texCoords[0] * atlas->_uStep + (atlas->_uStep * CUBE_UVS[(i * 2) + 0]);
+		mesh->dataBuffer[mesh->dataIndex++] = texCoords[1] * (16.f / 256.f) + ((16.f / 256.f) * CUBE_UVS[(i * 2) + 1]);
 		if (direction == FaceDirection::EAST)
 		{
 			mesh->dataBuffer[mesh->dataIndex++] = 0.1f;
