@@ -11,6 +11,7 @@
 #include "ConcurrentRingBuffer.h"
 #include "IEventHandler.h"
 
+class Player;
 class TextureAtlas;
 struct ChunkMesh;
 class ChunkTaskManager;
@@ -22,7 +23,7 @@ class World : public IEventHandler
 {
 private:
 	static const size_t _maxJobs = 1;
-	Camera* _mainCamera;
+	Player* _player;
 	Shader* _shader;
 
 	std::unordered_map<glm::ivec2, std::shared_ptr<Chunk>> _chunks;
@@ -43,10 +44,11 @@ public:
 	
 	TextureAtlas* _textureAtlas;
 
-	World(Shader* shader, TextureAtlas* atlas, Camera* mainCamera);
-	World(Shader* shader, TextureAtlas* atlas);
+	World(Shader* shader, TextureAtlas* atlas, Player* player);
 
 	void SetCenter(glm::vec3 blockPos);
+	void UpdateBlockAtPos(glm::ivec3 blockPos, uint8_t newBlock);
+	
 	void Update(float dt);
 	
 	void Render();
@@ -55,10 +57,11 @@ public:
 	bool BlockInRenderDistance(glm::ivec3 blockPos);
 	glm::ivec2 BlockPosToAbsChunkPos(glm::ivec3 blockPos);
 
+	Player* GetPlayer();
 	Camera* GetCamera();
 	Shader* GetShader();
 private:
-	void Init(Camera* mainCamera);
+	void Init();
 	
 	void LoadNewChunks();
 	void CreateLoadChunksTasks();
@@ -68,6 +71,7 @@ private:
 	unsigned int BlockPosToRelChunkIndex(glm::ivec3 blockPos);
 	unsigned int AbsChunkPosToRelIndex(glm::ivec2 chunkPos);
 	unsigned int RelChunkPosToRelIndex(glm::ivec2 chunkPos);
+	glm::ivec3 AbsBlockPosToChunkBlockPos(glm::ivec3 absBlockPos);
 	bool ChunkInRenderDistance(glm::ivec2 chunkPos);
 	bool ChunkInLoadDistance(glm::ivec2 chunkPos);
 	glm::ivec2 RelChunkIndexToAbsChunkPos(unsigned int index);

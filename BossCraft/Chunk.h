@@ -38,6 +38,7 @@ public:
 
 #pragma region Job Thread
 
+	void SetData(glm::ivec3 blockPos, uint8_t blockType);
 	void LoadData();
 	void GenerateMesh(std::array<std::shared_ptr<Chunk>, 4> neighbors);
 	
@@ -49,7 +50,6 @@ public:
 	void RenderMesh(Shader* shader);
 
 #pragma endregion
-	
 
 	unsigned int GetDataAtPosition(glm::vec3 pos);
 

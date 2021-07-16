@@ -2,7 +2,6 @@
 #include <glad/glad.h>
 #include <glm/mat4x2.hpp>
 #include <glm/ext/matrix_transform.hpp>
-#include "CameraDirection.h"
 
 class World;
 
@@ -24,18 +23,16 @@ public:
     float _pitch;
     float _mouseSensitivity;
     float _fov;
-
-    World* _world;
 	
-    Camera(World* world, glm::vec3 position = glm::vec3(0.f, 0.f, 0.f), glm::vec3 up = glm::vec3(0.f, 1.f, 0.f),
+    Camera(glm::vec3 position = glm::vec3(0.f, 0.f, 0.f), glm::vec3 up = glm::vec3(0.f, 1.f, 0.f),
         float yaw = DEFAULT_YAW, float pitch = DEFAULT_PITCH);
 
-    Camera(World* world, float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch);
+    Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch);
 
     glm::mat4 GetViewMatrix();
-
-    void ProcessKeyBoard(CameraDirection direction, float velocity, float dt);
-
+	
+    void UpdatePos(glm::vec3 newPos);
+	
     void ProcessMouseMovement(float xOffset, float yOffset, GLboolean constrainPitch);
 
     void ProcessMouseScroll(float yOffset);

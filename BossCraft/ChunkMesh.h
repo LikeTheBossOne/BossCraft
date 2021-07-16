@@ -11,7 +11,19 @@ struct ChunkMesh
 		dataBuffer = new float[(CHUNK_VOLUME) * 4 * 6 * 6];
 		indexBuffer = new uint16_t[(CHUNK_VOLUME) * 6 * 6];
 	}
-	
+
+	ChunkMesh(ChunkMesh& other)
+	{
+		vertexCount = other.vertexCount;
+		dataIndex = other.dataIndex;
+		indicesIndex = other.indicesIndex;
+
+		dataBuffer = new float[(CHUNK_VOLUME) * 4 * 6 * 6];
+		memcpy(dataBuffer, other.dataBuffer, CHUNK_VOLUME * 4 * 6 * 6 * sizeof(float));
+		indexBuffer = new uint16_t[(CHUNK_VOLUME) * 6 * 6];
+		memcpy(indexBuffer, other.indexBuffer, CHUNK_VOLUME * 6 * 6 * sizeof(uint16_t));
+	}
+
 	~ChunkMesh()
 	{
 		delete[] dataBuffer;
@@ -49,8 +61,8 @@ const float CUBE_VERTICES[] = {
 };
 
 const float CUBE_UVS[] = {
-	1, 0,
-	0, 0,
 	0, 1,
-	1, 1
+	1, 1,
+	1, 0,
+	0, 0
 };

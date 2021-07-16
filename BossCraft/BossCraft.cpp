@@ -10,6 +10,7 @@
 #include "GlobalEventManager.h"
 #include "JobSystem.h"
 #include "FastNoiseLite.h"
+#include "Player.h"
 #include "TextureAtlas.h"
 
 unsigned int SCREEN_WIDTH = 800;
@@ -143,19 +144,23 @@ void RenderLoop(GLFWwindow* window)
 
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		{
-			world->GetCamera()->ProcessKeyBoard(CameraDirection::Forward, 10, dt);
+			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Forward, 10, dt);
 		}
 		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 		{
-			world->GetCamera()->ProcessKeyBoard(CameraDirection::Backward, 10, dt);
+			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Backward, 10, dt);
 		}
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 		{
-			world->GetCamera()->ProcessKeyBoard(CameraDirection::Left, 10, dt);
+			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Left, 10, dt);
 		}
 		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		{
-			world->GetCamera()->ProcessKeyBoard(CameraDirection::Right, 10, dt);
+			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Right, 10, dt);
+		}
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT))
+		{
+			world->GetPlayer()->ProcessLeftMouseClick();
 		}
 
 		GlobalEventManager::ProcessEvents();
@@ -173,7 +178,7 @@ void RenderLoop(GLFWwindow* window)
 		fpsCounts++;
 		if (fpsCounts > 6)
 		{
-			std::cout << dt * 1000 << std::endl;
+			//std::cout << dt * 1000 << std::endl;
 			
 			fpsCounts = 0;
 		}
@@ -196,7 +201,7 @@ int main()
 	//LoadTextureAtlas("Resources/atlas.png", &textureID, GL_RGBA, GL_CLAMP_TO_EDGE, &width, &height);
 	TextureAtlas* atlas = new TextureAtlas("Resources/atlas.png", 16, 16);
 	
-	world = new World(new Shader("Shaders\\vertex1.vs", "Shaders\\fragment1.fs"), atlas);
+	world = new World(new Shader("Shaders\\vertex1.vs", "Shaders\\fragment1.fs"), atlas, new Player(glm::vec3(0, 64, 0)));
 
 	RenderLoop(window);
 }

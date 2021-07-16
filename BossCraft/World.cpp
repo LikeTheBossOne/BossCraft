@@ -8,25 +8,19 @@
 #include "NeighborChunks.h"
 #include "GlobalEventManager.h"
 #include "JobSystem.h"
+#include "Player.h"
 #include "TextureAtlas.h"
 
-
-World::World(Shader* shader, TextureAtlas* atlas) : _shader(shader), _textureAtlas(atlas)
+World::World(Shader* shader, TextureAtlas* atlas, Player* player) : _shader(shader), _textureAtlas(atlas), _player(player)
 {
-	Init(new Camera(this, glm::vec3(0, 65, 0)));
+	player->_world = this;
+	Init();
 }
 
-World::World(Shader* shader, TextureAtlas* atlas, Camera* mainCamera) : _shader(shader), _textureAtlas(atlas)
+void World::Init()
 {
-	Init(mainCamera);
-}
-
-void World::Init(Camera* mainCamera)
-{
-	_mainCamera = mainCamera;
-
 	_centerChunk = glm::ivec2(0, 0);
-	_renderDistance = 10;
+	_renderDistance = 1;
 	_extraLoadDistance = 1;
 	_chunkOrigin = glm::ivec2(-_renderDistance, -_renderDistance);
 
@@ -39,7 +33,7 @@ void World::Init(Camera* mainCamera)
 
 
 	_shader->Use();
-	glm::mat4 projection = glm::perspective(glm::radians(_mainCamera->_fov), 800.f / 600.f, 0.1f, 300.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(_player->_camera->_fov), 800.f / 600.f, 0.1f, 300.0f);
 	_shader->UniSetMat4f("projection", projection);
 
 	
@@ -77,6 +71,23 @@ void World::SetCenter(glm::vec3 blockPos)
 		}
 	}
 	LoadNewChunks();
+}
+
+void World::UpdateBlockAtPos(glm::ivec3 blockPos, uint8_t newBlock)
+{
+	glm::ivec2 chunkPos = BlockPosToAbsChunkPos(blockPos);
+	if (_chunks.find(chunkPos) != _chunks.end())
+	{
+		glm::ivec3 relBlockPos = AbsBlockPosToChunkBlockPos(blockPos);
+		std::shared_ptr<Chunk> oldChunk = _chunks[chunkPos];
+		// queue for update data
+		JobSystem::Execute([this, oldChunk, relBlockPos, newBlock]
+			{
+				std::shared_ptr<Chunk> chunkToUpdate = std::make_shared<Chunk>(*oldChunk);
+				chunkToUpdate->SetData(relBlockPos, newBlock);
+				this->_dataGenOutput.Enqueue(chunkToUpdate);
+			});
+	}
 }
 
 void World::Update(float dt)
@@ -126,7 +137,7 @@ void World::Render()
 	
 	_shader->Use();
 	//_shader->UniSetMat4f("view", _mainCamera->GetViewMatrix());
-	_shader->SetViewMatrix(_mainCamera->GetViewMatrix());
+	_shader->SetViewMatrix(_player->_camera->GetViewMatrix());
 	
 	
 	for (int x = _chunkOrigin[0]; x < _chunkOrigin[0] + (_renderDistance * 2) + 1; x++)
@@ -161,7 +172,7 @@ uint8_t World::GetBlockAtAbsPos(glm::ivec3 blockPos)
 
 Camera* World::GetCamera()
 {
-	return _mainCamera;
+	return _player->_camera;
 }
 
 Shader* World::GetShader()
@@ -199,7 +210,6 @@ void World::CreateLoadChunksTasks()
 				std::shared_ptr<Chunk> chunkToCreate = std::make_shared<Chunk>(pos, this);
 				chunkToCreate->LoadData();
 				this->_dataGenOutput.Enqueue(chunkToCreate);
-				
 			});
 		
 		count++;
@@ -274,6 +284,11 @@ unsigned World::RelChunkPosToRelIndex(glm::ivec2 chunkPos)
 	return (chunkPos[1] + _renderDistance) * totalDistance + (chunkPos[0] + _renderDistance);
 }
 
+glm::ivec3 World::AbsBlockPosToChunkBlockPos(glm::ivec3 absBlockPos)
+{
+	return glm::ivec3(absBlockPos.x % CHUNK_WIDTH, absBlockPos.y, absBlockPos.z % CHUNK_WIDTH);
+}
+
 unsigned World::BlockPosToRelChunkIndex(glm::ivec3 blockPos)
 {
 	return AbsChunkPosToRelIndex(BlockPosToAbsChunkPos(blockPos));
@@ -289,6 +304,11 @@ bool World::BlockInRenderDistance(glm::ivec3 blockPos)
 glm::ivec2 World::BlockPosToAbsChunkPos(glm::ivec3 blockPos)
 {
 	return glm::ivec2(floorf(blockPos.x / static_cast<float>(CHUNK_WIDTH)), floorf(blockPos.z / static_cast<float>(CHUNK_WIDTH)));
+}
+
+Player* World::GetPlayer()
+{
+	return _player;
 }
 
 bool World::ChunkInRenderDistance(glm::ivec2 chunkPos)

@@ -28,6 +28,27 @@ void BlockProvider::Init()
 			}
 		}
 	};
+
+	// Dirt
+	_blocks[2] = {
+		[](FaceDirection direction)
+		{
+			{
+			return glm::ivec2(18, 1);
+			}
+		}
+	};
+
+	// Stone
+	_blocks[3] = {
+		[](FaceDirection direction)
+		{
+			{
+			return glm::ivec2(19, 0);
+			}
+		}
+	};
+
 	
 }
 

@@ -15,50 +15,35 @@ Chunk::Chunk(glm::ivec2 chunkPos, World* owningWorld) : _chunkPos(chunkPos), _wo
 {
 	_isDirty = true;
 	_meshIsLoaded = false;
-	for (unsigned int x = 0; x < CHUNK_WIDTH; x++)
-	{
-		for (unsigned int z = 0; z < CHUNK_WIDTH; z++)
-		{
-			float absX = static_cast<float>(x) + (static_cast<float>(chunkPos[0]) * static_cast<float>(CHUNK_WIDTH));
-			float absZ = static_cast<float>(z) + (static_cast<float>(chunkPos[1]) * static_cast<float>(CHUNK_WIDTH));
-			float noise = _world->_noiseGenerator->GetNoise(absX, absZ);
-			unsigned int normNoise = floor((noise + 1) * 5 + (CHUNK_HEIGHT / 2.f));
-			normNoise = std::min(normNoise, CHUNK_HEIGHT - 1);
-			for (unsigned int y = 0; y < CHUNK_HEIGHT; y++)
-			{
-				if (y < normNoise)
-				{
-					_data[PositionToIndex(x, y, z)] = 1;
-				}
-				else
-				{
-					_data[PositionToIndex(x, y, z)] = 0;
-				}
-			}
-			
-			/*for (int z = 0; z < CHUNK_WIDTH; z++)
-			{
-				if (y == CHUNK_HEIGHT-1 && x == 0)
-				{
-					_data[PositionToIndex(x, y, z)] = 0;
-				}
-				else
-				{
-					_data[PositionToIndex(x, y, z)] = 1;
-				}
-				
-			}*/
-		}
-	}
 
 	_indexCount = 0;
 	_mesh = NULL;
+}
+
+Chunk::Chunk(Chunk& other)
+{
+	VAO = 0;
+	VBO = 0;
+	EBO = 0;
+	_indexCount = other._indexCount;
+	_mesh = NULL;
+
+	_world = other._world;
+	_data = other._data;
+	_chunkPos = other._chunkPos;
+	_isDirty = other._isDirty;
+	_meshIsLoaded = other._meshIsLoaded;
 }
 
 Chunk::~Chunk()
 {
 	_world->_chunkUnload.Enqueue(new std::array<unsigned int, 3>({ VAO, VBO, EBO }));
 	delete _mesh;
+}
+
+void Chunk::SetData(glm::ivec3 blockPos, uint8_t blockType)
+{
+	_data[PositionToIndex(blockPos)] = blockType;
 }
 
 unsigned int Chunk::PositionToIndex(unsigned int posX, unsigned int posY, unsigned int posZ)
@@ -92,7 +77,41 @@ void Chunk::LoadData()
 {
 	if (_isDirty)
 	{
-		// lol nothing
+		for (unsigned int x = 0; x < CHUNK_WIDTH; x++)
+		{
+			for (unsigned int z = 0; z < CHUNK_WIDTH; z++)
+			{
+				float absX = static_cast<float>(x) + (static_cast<float>(_chunkPos[0]) * static_cast<float>(CHUNK_WIDTH));
+				float absZ = static_cast<float>(z) + (static_cast<float>(_chunkPos[1]) * static_cast<float>(CHUNK_WIDTH));
+				float noise = _world->_noiseGenerator->GetNoise(absX, absZ);
+				unsigned int normNoise = floor((noise + 1) * 5 + (CHUNK_HEIGHT / 2.f));
+				normNoise = std::min(normNoise, CHUNK_HEIGHT - 1);
+				for (unsigned int y = 0; y < CHUNK_HEIGHT; y++)
+				{
+					if (y < normNoise)
+					{
+						_data[PositionToIndex(x, y, z)] = 1;
+					}
+					else
+					{
+						_data[PositionToIndex(x, y, z)] = 0;
+					}
+				}
+
+				/*for (int z = 0; z < CHUNK_WIDTH; z++)
+				{
+					if (y == CHUNK_HEIGHT-1 && x == 0)
+					{
+						_data[PositionToIndex(x, y, z)] = 0;
+					}
+					else
+					{
+						_data[PositionToIndex(x, y, z)] = 1;
+					}
+
+				}*/
+			}
+		}
 
 		// Unlock after use
 		_isDirty = false;

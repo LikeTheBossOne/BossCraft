@@ -1,8 +1,8 @@
 #include "Camera.h"
 #include "World.h"
 
-Camera::Camera(World* world, glm::vec3 position, glm::vec3 up, float yaw, float pitch) :
-    _world(world), _front(glm::vec3(0.0f, 0.0f, -1.0f)), _mouseSensitivity(DEFAULT_SENSITIVITY), _fov(DEFAULT_FOV)
+Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch) :
+    _front(glm::vec3(0.0f, 0.0f, -1.0f)), _mouseSensitivity(DEFAULT_SENSITIVITY), _fov(DEFAULT_FOV)
 {
     _position = position;
     _worldUp = up;
@@ -11,8 +11,8 @@ Camera::Camera(World* world, glm::vec3 position, glm::vec3 up, float yaw, float 
     UpdateCameraVectors();
 }
 
-Camera::Camera(World* world, float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) :
-    _world(world), _front(glm::vec3(0.0f, 0.0f, -1.0f)), _mouseSensitivity(DEFAULT_SENSITIVITY), _fov(DEFAULT_FOV)
+Camera::Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) :
+    _front(glm::vec3(0.0f, 0.0f, -1.0f)), _mouseSensitivity(DEFAULT_SENSITIVITY), _fov(DEFAULT_FOV)
 {
     _position = glm::vec3(posX, posY, posZ);
     _worldUp = glm::vec3(upX, upY, upZ);
@@ -27,27 +27,9 @@ glm::mat4 Camera::GetViewMatrix()
     return glm::lookAt(_position, _position + _front, _up);
 }
 
-void Camera::ProcessKeyBoard(CameraDirection direction, float velocity, float dt)
+void Camera::UpdatePos(glm::vec3 newPos)
 {
-    if (direction == CameraDirection::Forward)
-    {
-        _position += _front * velocity * dt;
-    }
-    if (direction == CameraDirection::Backward)
-    {
-        _position -= _front * velocity * dt;
-    }
-    if (direction == CameraDirection::Left)
-    {
-        _position -= _right * velocity * dt;
-    }
-    if (direction == CameraDirection::Right)
-    {
-        _position += _right * velocity * dt;
-    }
-
-    assert(_world != nullptr);
-    _world->SetCenter(_position);
+    _position = newPos;
 }
 
 void Camera::ProcessMouseMovement(float xOffset, float yOffset, GLboolean constrainPitch)
