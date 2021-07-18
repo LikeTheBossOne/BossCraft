@@ -39,8 +39,13 @@ public:
 	ConcurrentRingBuffer<std::shared_ptr<Chunk>, _maxJobs * 16> _dataGenOutput{};
 	ConcurrentRingBuffer<std::pair<glm::ivec2, ChunkMesh*>*, _maxJobs * 16> _meshGenOutput{};
 	ConcurrentRingBuffer<std::array<unsigned int, 3>*, _maxJobs * 16> _chunkUnload{};
+
+	ConcurrentRingBuffer<std::pair<glm::ivec3, std::shared_ptr<Chunk>>*, _maxJobs * 16> _dataUpdateOutput{};
+	ConcurrentRingBuffer<std::pair<glm::ivec3, std::shared_ptr<Chunk>>*, _maxJobs * 16> _meshUpdateOutput{};
+	
 	std::queue<glm::ivec2> _chunksToLoad;
 	std::queue<glm::ivec2> _chunksToGenMesh;
+	std::queue<std::pair<glm::ivec3, std::shared_ptr<Chunk>>> _chunksToUpdateMesh;
 	
 	TextureAtlas* _textureAtlas;
 
@@ -48,7 +53,7 @@ public:
 
 	void SetCenter(glm::vec3 blockPos);
 	void UpdateBlockAtPos(glm::ivec3 blockPos, uint8_t newBlock);
-	
+
 	void Update(float dt);
 	
 	void Render();
@@ -67,6 +72,8 @@ private:
 	void CreateLoadChunksTasks();
 	void CreateGenMeshTasks();
 	bool CreateSingleGenMeshTask(glm::ivec2 pos);
+	void CreateUpdateMeshTasks();
+	bool CreateSingleUpdateMeshTask(std::pair<glm::ivec3, std::shared_ptr<Chunk>> chunkAndPos);
 	
 	unsigned int BlockPosToRelChunkIndex(glm::ivec3 blockPos);
 	unsigned int AbsChunkPosToRelIndex(glm::ivec2 chunkPos);

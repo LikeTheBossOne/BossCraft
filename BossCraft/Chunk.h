@@ -40,7 +40,7 @@ public:
 
 	void SetData(glm::ivec3 blockPos, uint8_t blockType);
 	void LoadData();
-	void GenerateMesh(std::array<std::shared_ptr<Chunk>, 4> neighbors);
+	ChunkMesh* GenerateMesh(std::array<std::shared_ptr<Chunk>, 4> neighbors);
 	
 #pragma endregion
 

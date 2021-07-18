@@ -162,6 +162,10 @@ void RenderLoop(GLFWwindow* window)
 		{
 			world->GetPlayer()->ProcessLeftMouseClick();
 		}
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT))
+		{
+			world->GetPlayer()->ProcessRightMouseClick();
+		}
 
 		GlobalEventManager::ProcessEvents();
 		
@@ -178,7 +182,7 @@ void RenderLoop(GLFWwindow* window)
 		fpsCounts++;
 		if (fpsCounts > 6)
 		{
-			//std::cout << dt * 1000 << std::endl;
+			std::cout << dt * 1000 << std::endl;
 			
 			fpsCounts = 0;
 		}

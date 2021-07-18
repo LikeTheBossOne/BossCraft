@@ -121,7 +121,7 @@ void Chunk::LoadData()
 /**
  * Not main thread
  */
-void Chunk::GenerateMesh(std::array<std::shared_ptr<Chunk>, 4> neighbors)
+ChunkMesh* Chunk::GenerateMesh(std::array<std::shared_ptr<Chunk>, 4> neighbors)
 {
 	ChunkMesh* mesh = new ChunkMesh;
 	// Generate Mesh
@@ -201,7 +201,7 @@ void Chunk::GenerateMesh(std::array<std::shared_ptr<Chunk>, 4> neighbors)
 	//std::string output = "GenMesh: " + std::to_string(_chunkPos[0]) + ", " + std::to_string(_chunkPos[1]);
 	//std::cout << output << std::endl;
 	//std::cout << "Mesh" << std::endl;
-	_world->_meshGenOutput.Enqueue(new std::pair<glm::vec<2, int, glm::defaultp>, ChunkMesh*>(_chunkPos, mesh));
+	return mesh;
 }
 
 void Chunk::GLLoad()

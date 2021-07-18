@@ -157,6 +157,7 @@
     <ClCompile Include="glad.c" />
     <ClCompile Include="GlobalEventManager.cpp" />
     <ClCompile Include="JobSystem.cpp" />
+    <ClCompile Include="Physics.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="TextureAtlas.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
@@ -178,7 +179,9 @@
     <ClInclude Include="JobSystem.h" />
     <ClInclude Include="load_stb_image.h" />
     <ClInclude Include="NeighborChunks.h" />
+    <ClInclude Include="Physics.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="RayCastHit.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="TextureAtlas.h" />

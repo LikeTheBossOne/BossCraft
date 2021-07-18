@@ -20,7 +20,7 @@ World::World(Shader* shader, TextureAtlas* atlas, Player* player) : _shader(shad
 void World::Init()
 {
 	_centerChunk = glm::ivec2(0, 0);
-	_renderDistance = 1;
+	_renderDistance = 3;
 	_extraLoadDistance = 1;
 	_chunkOrigin = glm::ivec2(-_renderDistance, -_renderDistance);
 
@@ -85,14 +85,14 @@ void World::UpdateBlockAtPos(glm::ivec3 blockPos, uint8_t newBlock)
 			{
 				std::shared_ptr<Chunk> chunkToUpdate = std::make_shared<Chunk>(*oldChunk);
 				chunkToUpdate->SetData(relBlockPos, newBlock);
-				this->_dataGenOutput.Enqueue(chunkToUpdate);
+				this->_dataUpdateOutput.Enqueue(new std::pair<glm::ivec3, std::shared_ptr<Chunk>>(relBlockPos, chunkToUpdate));
 			});
 	}
 }
 
 void World::Update(float dt)
 {
-	// First Check output arrays for new data
+	// Check Data Gen
 	std::shared_ptr<Chunk> outChunk;
 	while (_dataGenOutput.Dequeue(outChunk))
 	{
@@ -101,6 +101,7 @@ void World::Update(float dt)
 		_chunksToGenMesh.emplace(outChunk->_chunkPos);
 	}
 
+	// Check Mesh Gen
 	std::pair<glm::ivec2, ChunkMesh*>* outMesh;
 	while (_meshGenOutput.Dequeue(outMesh))
 	{
@@ -115,6 +116,61 @@ void World::Update(float dt)
 		}
 	}
 
+	// Check Data Update
+	std::pair<glm::ivec3, std::shared_ptr<Chunk>>* outChunkAndPos;
+	while (_dataUpdateOutput.Dequeue(outChunkAndPos))
+	{
+		outChunkAndPos->second->GLLoad();
+		_chunksToUpdateMesh.emplace(*outChunkAndPos);
+		delete outChunkAndPos;
+		
+	}
+	
+	// Check Mesh Update
+	
+	while (_meshUpdateOutput.Dequeue(outChunkAndPos))
+	{
+		outChunkAndPos->second->BufferMesh();
+		_chunks[outChunkAndPos->second->_chunkPos] = outChunkAndPos->second;
+
+		glm::ivec2 chunkPos = outChunkAndPos->second->_chunkPos;
+		glm::ivec3 outPos = outChunkAndPos->first;
+		if (outPos.x == 0)
+		{
+			glm::ivec2 minusXPos = { chunkPos[0] - 1, chunkPos[1] };
+			if (_chunks.find(minusXPos) != _chunks.end())
+			{
+				_chunksToGenMesh.emplace(minusXPos);
+			}
+		}
+		else if (outPos.x == CHUNK_WIDTH - 1)
+		{
+			glm::ivec2 plusXPos = { chunkPos[0] + 1, chunkPos[1] };
+			if (_chunks.find(plusXPos) != _chunks.end())
+			{
+				_chunksToGenMesh.emplace(plusXPos);
+			}
+		}
+		if (outPos.z == 0)
+		{
+			glm::ivec2 minusZPos = { chunkPos[0], chunkPos[1] - 1 };
+			if (_chunks.find(minusZPos) != _chunks.end())
+			{
+				_chunksToGenMesh.emplace(minusZPos);
+			}
+		}
+		else if (outPos.z == CHUNK_WIDTH - 1)
+		{
+			glm::ivec2 plusZPos = { chunkPos[0], chunkPos[1] + 1 };
+			if (_chunks.find(plusZPos) != _chunks.end())
+			{
+				_chunksToGenMesh.emplace(plusZPos);
+			}
+		}
+
+		delete outChunkAndPos;
+	}
+	
 	std::array<unsigned int, 3>* outBuffers;
 	while (_chunkUnload.Dequeue(outBuffers))
 	{
@@ -126,6 +182,7 @@ void World::Update(float dt)
 
 	CreateGenMeshTasks();
 	CreateLoadChunksTasks();
+	CreateUpdateMeshTasks();
 	Render();
 }
 
@@ -256,10 +313,10 @@ bool World::CreateSingleGenMeshTask(glm::ivec2 pos)
 	};
 	for (unsigned int posIdx = 0; posIdx < 4; posIdx++)
 	{
-		glm::ivec2 pos = poses[posIdx];
-		if (_chunks.find(pos) != _chunks.end() && _chunks[pos] != NULL)
+		glm::ivec2 currPos = poses[posIdx];
+		if (_chunks.find(currPos) != _chunks.end() && _chunks[currPos] != NULL)
 		{
-			neighbors[posIdx] = _chunks[pos];
+			neighbors[posIdx] = _chunks[currPos];
 		}
 		else
 		{
@@ -268,7 +325,64 @@ bool World::CreateSingleGenMeshTask(glm::ivec2 pos)
 	}
 
 	std::shared_ptr<Chunk> chunk = _chunks[pos];
-	JobSystem::Execute([chunk, neighbors] {chunk->GenerateMesh(neighbors); });
+	JobSystem::Execute([this, chunk, neighbors]
+	{
+		ChunkMesh* mesh = chunk->GenerateMesh(neighbors);
+		_meshGenOutput.Enqueue(new std::pair<glm::vec<2, int, glm::defaultp>, ChunkMesh*>((chunk->_chunkPos), mesh));
+	});
+	return true;
+}
+
+void World::CreateUpdateMeshTasks()
+{
+	std::vector<std::pair<glm::ivec3, std::shared_ptr<Chunk>>> outsideRange;
+	while (!_chunksToUpdateMesh.empty())
+	{
+		std::pair<glm::ivec3, std::shared_ptr<Chunk>> chunkAndPos = _chunksToUpdateMesh.front();
+		_chunksToUpdateMesh.pop();
+
+		if (!CreateSingleUpdateMeshTask(chunkAndPos))
+		{
+			outsideRange.emplace_back(chunkAndPos);
+		}
+	}
+
+	for (auto chunkAndPos : outsideRange)
+	{
+		_chunksToUpdateMesh.emplace(chunkAndPos);
+	}
+}
+
+bool World::CreateSingleUpdateMeshTask(std::pair<glm::ivec3, std::shared_ptr<Chunk>> chunkAndBlockPos)
+{
+	std::shared_ptr<Chunk> chunk = chunkAndBlockPos.second;
+	glm::ivec2 pos = chunk->_chunkPos;
+	std::array<std::shared_ptr<Chunk>, 4> neighbors{};
+	std::array<glm::ivec2, 4> poses = {
+		glm::ivec2(pos[0] + 1, pos[1]),
+		glm::ivec2(pos[0] - 1, pos[1]),
+		glm::ivec2(pos[0], pos[1] + 1),
+		glm::ivec2(pos[0], pos[1] - 1)
+	};
+	for (unsigned int posIdx = 0; posIdx < 4; posIdx++)
+	{
+		glm::ivec2 currPos = poses[posIdx];
+		if (_chunks.find(currPos) != _chunks.end() && _chunks[currPos] != NULL)
+		{
+			neighbors[posIdx] = _chunks[currPos];
+		}
+		else
+		{
+			return false;
+		}
+	}
+	glm::ivec3 blockPos = chunkAndBlockPos.first;
+	JobSystem::Execute([this, chunk, neighbors, blockPos]
+		{
+			ChunkMesh* mesh = chunk->GenerateMesh(neighbors);
+			chunk->_mesh = mesh;
+			_meshUpdateOutput.Enqueue(new std::pair<glm::ivec3, std::shared_ptr<Chunk>>(blockPos, chunk));
+		});
 	return true;
 }
 
