@@ -52,7 +52,7 @@ void BlockProvider::Init()
 	
 }
 
-glm::vec2 BlockProvider::GetBlockTextureLocation(uint8_t block, FaceDirection direction)
+glm::ivec2 BlockProvider::GetBlockTextureLocation(uint8_t block, FaceDirection direction)
 {
 	return _blocks[block].GetTexture(direction);
 }

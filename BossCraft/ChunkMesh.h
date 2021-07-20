@@ -8,7 +8,7 @@ struct ChunkMesh
 		dataIndex = 0;
 		indicesIndex = 0;
 
-		dataBuffer = new float[(CHUNK_VOLUME) * 4 * 6 * 6];
+		dataBuffer = new uint32_t[(CHUNK_VOLUME) * 4 * 6];
 		indexBuffer = new uint16_t[(CHUNK_VOLUME) * 6 * 6];
 	}
 
@@ -18,8 +18,8 @@ struct ChunkMesh
 		dataIndex = other.dataIndex;
 		indicesIndex = other.indicesIndex;
 
-		dataBuffer = new float[(CHUNK_VOLUME) * 4 * 6 * 6];
-		memcpy(dataBuffer, other.dataBuffer, CHUNK_VOLUME * 4 * 6 * 6 * sizeof(float));
+		dataBuffer = new uint32_t[(CHUNK_VOLUME) * 4 * 6];
+		memcpy(dataBuffer, other.dataBuffer, CHUNK_VOLUME * 4 * 6 * sizeof(uint32_t));
 		indexBuffer = new uint16_t[(CHUNK_VOLUME) * 6 * 6];
 		memcpy(indexBuffer, other.indexBuffer, CHUNK_VOLUME * 6 * 6 * sizeof(uint16_t));
 	}
@@ -33,7 +33,7 @@ struct ChunkMesh
 	unsigned int vertexCount;
 	unsigned int dataIndex;
 	unsigned int indicesIndex;
-	float* dataBuffer;
+	uint32_t* dataBuffer;
 	uint16_t* indexBuffer;
 };
 
@@ -48,7 +48,7 @@ const int CUBE_INDICES[] = {
 	5, 4, 0, 5, 0, 1, // bottom (-y)
 };
 
-const float CUBE_VERTICES[] = {
+const uint8_t CUBE_VERTICES[] = {
 	0, 0, 0,
 	1, 0, 0,
 	1, 1, 0,
@@ -60,7 +60,7 @@ const float CUBE_VERTICES[] = {
 	0, 1, 1
 };
 
-const float CUBE_UVS[] = {
+const uint8_t CUBE_UVS[] = {
 	0, 1,
 	1, 1,
 	1, 0,

@@ -207,7 +207,7 @@ int main()
 	//LoadTextureAtlas("Resources/atlas.png", &textureID, GL_RGBA, GL_CLAMP_TO_EDGE, &width, &height);
 	TextureAtlas* atlas = new TextureAtlas("Resources/atlas.png", 16, 16);
 	
-	world = new World(new Shader("Shaders\\vertex1.vs", "Shaders\\fragment1.fs"), atlas, new Player(glm::vec3(0, 64, 0)));
+	world = new World(new Shader("Shaders\\vertex2.vs", "Shaders\\fragment2.fs"), atlas, new Player(glm::vec3(0, 64, 0)));
 
 	RenderLoop(window);
 }
