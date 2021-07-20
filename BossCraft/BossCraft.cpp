@@ -7,6 +7,7 @@
 #include <chrono>
 
 #include "BlockProvider.h"
+#include "ChunkResources.h"
 #include "GlobalEventManager.h"
 #include "JobSystem.h"
 #include "FastNoiseLite.h"
@@ -197,6 +198,7 @@ int main()
 	GlobalEventManager::Init();
 	JobSystem::Init();
 	BlockProvider::Init();
+	ChunkResources::Init("chunks");
 	
 	GLFWwindow* window = CreateWindow();
 

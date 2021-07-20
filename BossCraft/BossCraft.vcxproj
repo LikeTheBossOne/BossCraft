@@ -153,7 +153,7 @@
     <ClCompile Include="BossCraft.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Chunk.cpp" />
-    <ClCompile Include="ChunkTaskManager.cpp" />
+    <ClCompile Include="ChunkResources.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="GlobalEventManager.cpp" />
     <ClCompile Include="JobSystem.cpp" />
@@ -169,7 +169,7 @@
     <ClInclude Include="CameraDirection.h" />
     <ClInclude Include="Chunk.h" />
     <ClInclude Include="ChunkMesh.h" />
-    <ClInclude Include="ChunkTaskManager.h" />
+    <ClInclude Include="ChunkResources.h" />
     <ClInclude Include="ConcurrentRingBuffer.h" />
     <ClInclude Include="EventBase.h" />
     <ClInclude Include="FaceDirection.h" />
@@ -182,11 +182,15 @@
     <ClInclude Include="Physics.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="RayCastHit.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="TextureAtlas.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="World.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="BossCraft.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

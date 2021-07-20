@@ -69,7 +69,7 @@ void Player::ProcessRightMouseClick()
     RayCastHit hit;
     if (Physics::RayCast(_camera->_position, _camera->_front, hit, 10, _world))
     {
-        _world->UpdateBlockAtPos(hit.blockPosition + hit.normal, 1);
+        _world->UpdateBlockAtPos(hit.blockPosition + hit.normal, 3);
         _nextAllowedRightClick = now + std::chrono::milliseconds(300);
     }
 }

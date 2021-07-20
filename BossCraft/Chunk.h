@@ -20,10 +20,12 @@ struct ChunkMesh;
 class Chunk
 {
 	friend class World;
+	friend class ChunkResources;
 private:
 	unsigned int VAO, VBO, EBO;
 	unsigned int _indexCount;
 	ChunkMesh* _mesh;
+	glm::mat4 _model;
 	
 	World* _world;
 	std::array<uint8_t, CHUNK_VOLUME> _data;

@@ -4,7 +4,7 @@
 #include "EventBase.h"
 #include "ChunkLoadedEvent.h"
 #include "ChunkMesh.h"
-#include "ChunkTaskManager.h"
+#include "ChunkResources.h"
 #include "NeighborChunks.h"
 #include "GlobalEventManager.h"
 #include "JobSystem.h"
@@ -20,8 +20,8 @@ World::World(Shader* shader, TextureAtlas* atlas, Player* player) : _shader(shad
 void World::Init()
 {
 	_centerChunk = glm::ivec2(0, 0);
-	_renderDistance = 3;
-	_extraLoadDistance = 1;
+	_renderDistance = 12;
+	_extraLoadDistance = 2;
 	_chunkOrigin = glm::ivec2(-_renderDistance, -_renderDistance);
 
 	unsigned int totalChunks = ((2 * _renderDistance) + 1) * ((2 * _renderDistance) + 1);
@@ -61,7 +61,15 @@ void World::SetCenter(glm::vec3 blockPos)
 		if (!ChunkInLoadDistance(it->first))
 		{
 			//it->second->GLUnload();
-			_chunks[it->first] = NULL;
+			if (_chunks[it->first] != NULL)
+			{
+				std::shared_ptr<Chunk> chunk = _chunks[it->first];
+				JobSystem::Execute([chunk]
+					{
+						ChunkResources::SaveChunk(chunk);
+					});
+				_chunks[it->first] = NULL;
+			}
 			it = _chunks.erase(it);
 			//_chunks[chunkPos] = NULL;
 		}

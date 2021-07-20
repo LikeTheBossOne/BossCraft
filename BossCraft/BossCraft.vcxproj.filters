@@ -49,6 +49,12 @@
     <Filter Include="Source Files\Physics">
       <UniqueIdentifier>{0b575e5b-cdbe-4f6b-9659-806b9a60f969}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Blocks">
+      <UniqueIdentifier>{6ab17599-edaf-465c-9e00-8e598445019c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Blocks">
+      <UniqueIdentifier>{267385bd-f0d6-471c-bcd1-7952fbee08f5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BossCraft.cpp">
@@ -72,23 +78,23 @@
     <ClCompile Include="ThreadPool.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="ChunkTaskManager.cpp">
-      <Filter>Source Files\Systems</Filter>
-    </ClCompile>
     <ClCompile Include="JobSystem.cpp">
       <Filter>Source Files\Systems</Filter>
-    </ClCompile>
-    <ClCompile Include="TextureAtlas.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BlockProvider.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Player.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Physics.cpp">
       <Filter>Source Files\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockProvider.cpp">
+      <Filter>Source Files\Blocks</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureAtlas.cpp">
+      <Filter>Source Files\Blocks</Filter>
+    </ClCompile>
+    <ClCompile Include="ChunkResources.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -137,20 +143,11 @@
     <ClInclude Include="ThreadPool.h">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="ChunkTaskManager.h">
-      <Filter>Header Files\Systems</Filter>
-    </ClInclude>
     <ClInclude Include="JobSystem.h">
       <Filter>Header Files\Systems</Filter>
     </ClInclude>
     <ClInclude Include="ConcurrentRingBuffer.h">
       <Filter>Header Files\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="TextureAtlas.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BlockProvider.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Player.h">
       <Filter>Header Files</Filter>
@@ -161,5 +158,22 @@
     <ClInclude Include="RayCastHit.h">
       <Filter>Header Files\Physics</Filter>
     </ClInclude>
+    <ClInclude Include="TextureAtlas.h">
+      <Filter>Header Files\Blocks</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockProvider.h">
+      <Filter>Header Files\Blocks</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ChunkResources.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="BossCraft.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

@@ -36,12 +36,12 @@ private:
 
 public:
 	FastNoiseLite* _noiseGenerator;
-	ConcurrentRingBuffer<std::shared_ptr<Chunk>, _maxJobs * 16> _dataGenOutput{};
-	ConcurrentRingBuffer<std::pair<glm::ivec2, ChunkMesh*>*, _maxJobs * 16> _meshGenOutput{};
-	ConcurrentRingBuffer<std::array<unsigned int, 3>*, _maxJobs * 16> _chunkUnload{};
+	ConcurrentRingBuffer<std::shared_ptr<Chunk>, _maxJobs * 64> _dataGenOutput{};
+	ConcurrentRingBuffer<std::pair<glm::ivec2, ChunkMesh*>*, _maxJobs * 64> _meshGenOutput{};
+	ConcurrentRingBuffer<std::array<unsigned int, 3>*, _maxJobs * 64> _chunkUnload{};
 
-	ConcurrentRingBuffer<std::pair<glm::ivec3, std::shared_ptr<Chunk>>*, _maxJobs * 16> _dataUpdateOutput{};
-	ConcurrentRingBuffer<std::pair<glm::ivec3, std::shared_ptr<Chunk>>*, _maxJobs * 16> _meshUpdateOutput{};
+	ConcurrentRingBuffer<std::pair<glm::ivec3, std::shared_ptr<Chunk>>*, _maxJobs * 64> _dataUpdateOutput{};
+	ConcurrentRingBuffer<std::pair<glm::ivec3, std::shared_ptr<Chunk>>*, _maxJobs * 64> _meshUpdateOutput{};
 	
 	std::queue<glm::ivec2> _chunksToLoad;
 	std::queue<glm::ivec2> _chunksToGenMesh;

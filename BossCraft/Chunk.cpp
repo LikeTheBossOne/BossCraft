@@ -18,6 +18,8 @@ Chunk::Chunk(glm::ivec2 chunkPos, World* owningWorld) : _chunkPos(chunkPos), _wo
 
 	_indexCount = 0;
 	_mesh = NULL;
+	_model = glm::mat4(1.f);
+	_model = glm::translate(_model, glm::vec3(_chunkPos[0] * 1.f * CHUNK_WIDTH, 0, _chunkPos[1] * 1.f * CHUNK_WIDTH));
 }
 
 Chunk::Chunk(Chunk& other)
@@ -27,7 +29,8 @@ Chunk::Chunk(Chunk& other)
 	EBO = 0;
 	_indexCount = other._indexCount;
 	_mesh = NULL;
-
+	_model = other._model;
+	
 	_world = other._world;
 	_data = other._data;
 	_chunkPos = other._chunkPos;
@@ -250,10 +253,8 @@ void Chunk::RenderMesh(Shader* shader)
 	}
 	
 	shader->Use();
-	glm::mat4 model = glm::mat4(1.f);
-	model = glm::translate(model, glm::vec3(_chunkPos[0] * 1.f * CHUNK_WIDTH, 0, _chunkPos[1] * 1.f * CHUNK_WIDTH));
 
-	shader->SetModel(model);
+	shader->SetModel(_model);
 	//shader->UniSetMat4f("model", model);
 
 	
