@@ -145,19 +145,19 @@ void RenderLoop(GLFWwindow* window)
 
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		{
-			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Forward, 10, dt);
+			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Forward, 50, dt);
 		}
 		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 		{
-			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Backward, 10, dt);
+			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Backward, 50, dt);
 		}
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 		{
-			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Left, 10, dt);
+			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Left, 50, dt);
 		}
 		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		{
-			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Right, 10, dt);
+			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Right, 50, dt);
 		}
 		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT))
 		{

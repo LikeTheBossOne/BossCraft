@@ -39,7 +39,7 @@ void ChunkResources::SaveChunk(std::shared_ptr<Chunk> chunk)
 	}
 }
 
-uint8_t* ChunkResources::LoadChunk(glm::ivec2 chunkPos)
+bool ChunkResources::LoadChunk(glm::ivec2 chunkPos, std::array<uint8_t, CHUNK_VOLUME>* data)
 {
 	std::stringstream fileName;
 	fileName << "chunk" << chunkPos[0] << "-" << chunkPos[1];
@@ -50,9 +50,8 @@ uint8_t* ChunkResources::LoadChunk(glm::ivec2 chunkPos)
 		{
 			return NULL;
 		}
-		
-		uint8_t* data = new uint8_t[CHUNK_VOLUME];
-		inStream.read(reinterpret_cast<char*>(data), sizeof(char) * CHUNK_VOLUME);
+		std::copy_n(std::istream_iterator<char>{inStream}, CHUNK_VOLUME, data->begin());
+		//inStream.read(reinterpret_cast<char*>(data), sizeof(char) * CHUNK_VOLUME);
 		return data;
 	}
 }
