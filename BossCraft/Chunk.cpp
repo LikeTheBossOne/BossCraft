@@ -7,6 +7,7 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "ChunkMesh.h"
+#include "ChunkResources.h"
 #include "FaceDirection.h"
 #include "TextureAtlas.h"
 #include "World.h"
@@ -80,39 +81,31 @@ void Chunk::LoadData()
 {
 	if (_isDirty)
 	{
-		for (unsigned int x = 0; x < CHUNK_WIDTH; x++)
+		bool loadedFromFile = ChunkResources::LoadChunk(_chunkPos, &_data);
+
+		if (!loadedFromFile)
 		{
-			for (unsigned int z = 0; z < CHUNK_WIDTH; z++)
+			for (unsigned int x = 0; x < CHUNK_WIDTH; x++)
 			{
-				float absX = static_cast<float>(x) + (static_cast<float>(_chunkPos[0]) * static_cast<float>(CHUNK_WIDTH));
-				float absZ = static_cast<float>(z) + (static_cast<float>(_chunkPos[1]) * static_cast<float>(CHUNK_WIDTH));
-				float noise = _world->_noiseGenerator->GetNoise(absX, absZ);
-				unsigned int normNoise = floor((noise + 1) * 5 + (CHUNK_HEIGHT / 2.f));
-				normNoise = std::min(normNoise, CHUNK_HEIGHT - 1);
-				for (unsigned int y = 0; y < CHUNK_HEIGHT; y++)
+				for (unsigned int z = 0; z < CHUNK_WIDTH; z++)
 				{
-					if (y < normNoise)
+					float absX = static_cast<float>(x) + (static_cast<float>(_chunkPos[0]) * static_cast<float>(CHUNK_WIDTH));
+					float absZ = static_cast<float>(z) + (static_cast<float>(_chunkPos[1]) * static_cast<float>(CHUNK_WIDTH));
+					float noise = _world->_noiseGenerator->GetNoise(absX, absZ);
+					unsigned int normNoise = floor((noise + 1) * 5 + (CHUNK_HEIGHT / 2.f));
+					normNoise = std::min(normNoise, CHUNK_HEIGHT - 1);
+					for (unsigned int y = 0; y < CHUNK_HEIGHT; y++)
 					{
-						_data[PositionToIndex(x, y, z)] = 1;
-					}
-					else
-					{
-						_data[PositionToIndex(x, y, z)] = 0;
+						if (y < normNoise)
+						{
+							_data[PositionToIndex(x, y, z)] = 1;
+						}
+						else
+						{
+							_data[PositionToIndex(x, y, z)] = 0;
+						}
 					}
 				}
-
-				/*for (int z = 0; z < CHUNK_WIDTH; z++)
-				{
-					if (y == CHUNK_HEIGHT-1 && x == 0)
-					{
-						_data[PositionToIndex(x, y, z)] = 0;
-					}
-					else
-					{
-						_data[PositionToIndex(x, y, z)] = 1;
-					}
-
-				}*/
 			}
 		}
 
@@ -219,15 +212,8 @@ void Chunk::GLLoad()
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, sizeof(uint32_t), (void*)0);
 	glEnableVertexAttribArray(0);
-
-	// texture coord attribute
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(5 * sizeof(float)));
-	glEnableVertexAttribArray(2);
 
 	glBindVertexArray(0);
 
@@ -255,8 +241,6 @@ void Chunk::RenderMesh(Shader* shader)
 	shader->Use();
 
 	shader->SetModel(_model);
-	//shader->UniSetMat4f("model", model);
-
 	
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
@@ -264,40 +248,47 @@ void Chunk::RenderMesh(Shader* shader)
 	glBindVertexArray(0);
 }
 
-void Chunk::AddFaceToMesh(glm::vec3 blockPos, FaceDirection direction, ChunkMesh* mesh)
+void Chunk::AddFaceToMesh(glm::ivec3 blockPos, FaceDirection direction, ChunkMesh* mesh)
 {
 	TextureAtlas* atlas = _world->_textureAtlas;
 	unsigned char block = _data[PositionToIndex(blockPos)];
-	glm::vec2 texCoords = BlockProvider::GetBlockTextureLocation(block, direction);
+	glm::ivec2 texCoords = BlockProvider::GetBlockTextureLocation(block, direction);
 	for (int i = 0; i < 4; i++)
 	{
-		const float* vertex = &CUBE_VERTICES[CUBE_INDICES[(direction * 6) + UNIQUE_INDICES[i]] * 3];
-		mesh->dataBuffer[mesh->dataIndex++] = blockPos.x + vertex[0];
-		mesh->dataBuffer[mesh->dataIndex++] = blockPos.y + vertex[1];
-		mesh->dataBuffer[mesh->dataIndex++] = blockPos.z + vertex[2];
-		mesh->dataBuffer[mesh->dataIndex++] = texCoords[0] * atlas->_uStep + (atlas->_uStep * CUBE_UVS[(i * 2) + 0]);
-		mesh->dataBuffer[mesh->dataIndex++] = texCoords[1] * (16.f / 256.f) + ((16.f / 256.f) * CUBE_UVS[(i * 2) + 1]);
+		uint32_t data = 0x00000000;
+		
+		const uint8_t* vertex = &CUBE_VERTICES[CUBE_INDICES[(direction * 6) + UNIQUE_INDICES[i]] * 3];
+		uint8_t valTimes10;
 		if (direction == FaceDirection::EAST)
 		{
-			mesh->dataBuffer[mesh->dataIndex++] = 0.1f;
+			valTimes10 = 1;
 		}
 		else if (direction == FaceDirection::WEST)
 		{
-			mesh->dataBuffer[mesh->dataIndex++] = 0.2f;
+			valTimes10 = 2;
 		}
 		else if (direction == FaceDirection::NORTH)
 		{
-			mesh->dataBuffer[mesh->dataIndex++] = 0.3f;
+			valTimes10 = 3;
 		}
 		else if (direction == FaceDirection::SOUTH)
 		{
-			mesh->dataBuffer[mesh->dataIndex++] = 0.2f;
+			valTimes10 = 2;
 		}
 		else
 		{
-			mesh->dataBuffer[mesh->dataIndex++] = 0.0f;
+			valTimes10 = 0;
 		}
 		
+		data = data | (0x1Fu & (blockPos.x + vertex[0]));
+		data = data | ((0x1FFu & (blockPos.y + vertex[1])) << 5u);
+		data = data | ((0x1Fu & (blockPos.z + vertex[2])) << 14u);
+		data = data | ((0x3u & i) << 19u);
+		data = data | ((0x1Fu & texCoords[0]) << 21u);
+		data = data | ((0xFu & texCoords[1]) << 26u);
+		data = data | ((0x3u & valTimes10) << 30u);
+
+		mesh->dataBuffer[mesh->dataIndex++] = data;
 	}
 
 	for (int i = 0; i < 6; i++)
@@ -315,7 +306,7 @@ void Chunk::BufferMesh()
 	_indexCount = _mesh->indicesIndex;
 	
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, _mesh->dataIndex * sizeof(float), _mesh->dataBuffer, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, _mesh->dataIndex * sizeof(uint32_t), _mesh->dataBuffer, GL_STATIC_DRAW);
 	
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, _indexCount * sizeof(uint16_t), _mesh->indexBuffer, GL_STATIC_DRAW);

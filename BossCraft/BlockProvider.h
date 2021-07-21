@@ -25,6 +25,6 @@ private:
 	
 public:
 	static void Init();
-	static glm::vec2 GetBlockTextureLocation(uint8_t block, FaceDirection direction);
+	static glm::ivec2 GetBlockTextureLocation(uint8_t block, FaceDirection direction);
 };
 

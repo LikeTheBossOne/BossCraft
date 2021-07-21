@@ -62,7 +62,7 @@ private:
 	unsigned int PositionToIndex(glm::ivec3 pos);
 	glm::vec3 IndexToPosition(unsigned int index);
 	bool BlockInChunkBounds(glm::ivec3 pos);
-	void AddFaceToMesh(glm::vec3 blockPos, FaceDirection direction, ChunkMesh* mesh);
+	void AddFaceToMesh(glm::ivec3 blockPos, FaceDirection direction, ChunkMesh* mesh);
 	void BufferMesh();
 };
 

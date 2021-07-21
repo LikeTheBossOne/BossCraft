@@ -12,10 +12,10 @@ vec2 cube_uvs[4] = vec2[4](
     vec2(0.0f, 1.0f),
     vec2(1.0f, 1.0f),
     vec2(1.0f, 0.0f),
-    vec2(0.0f, 0.0f),
+    vec2(0.0f, 0.0f)
 );
 
-float mix[4] = float[4](
+float mixVals[4] = float[4](
     0.0f,
     0.1f,
     0.2f,
@@ -24,13 +24,15 @@ float mix[4] = float[4](
 
 void main()
 {
-    float x = float(aVertData & 0xFu); // 4 bits
-    float y = float((aVertData & 0xFF0u) >> 4u); // 8 bits
-    float z = float((aVertData & 0xF000u) >> 12u); // 4 bits
-    uint texIdx = (aVertData & 0xFF0000) >> 16u; // 8 bits
-    uint mixIdx = (aVertData & 0xF000000) >> 24u; // 4 bits
+    float x = float(aVertData & 0x1Fu); // 5 bits
+    float y = float((aVertData & 0x3FE0u) >> 5u); // 9 bits
+    float z = float((aVertData & 0x7C000u) >> 14u); // 5 bits
+    uint texIdx = (aVertData & 0x180000u) >> 19u; // 2 bits = index up to 3
+    float texU = float((aVertData & 0x3E00000u) >> 21u); // 5 bits = atlas width up to 32
+    float texV = float((aVertData & 0x3C000000u) >> 26u); // 4 bits = atlas height up to 16
+    uint mixIdx = (aVertData & 0xC0000000u) >> 30u; // 2 bits
 
     gl_Position = projection * view * model * vec4(x, y, z, 1.0);
-    TexCoord = cube_uvs[texIdx];
-    ColorMix = mix[mixIdx];
+    TexCoord = (vec2(cube_uvs[texIdx]) + vec2(texU, texV)) * vec2((1.f / 32.f), (1.f / 16.f));
+    ColorMix = mixVals[mixIdx];
 }

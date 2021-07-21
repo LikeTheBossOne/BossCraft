@@ -2,6 +2,8 @@
 #include <memory>
 #include <string>
 #include <glm/vec2.hpp>
+
+#include "Chunk.h"
 class Chunk;
 
 class ChunkResources
@@ -14,6 +16,6 @@ public:
 	
 	static void SaveChunk(std::shared_ptr<Chunk> chunk);
 
-	uint8_t* LoadChunk(glm::ivec2 chunkPos);
+	static bool LoadChunk(glm::ivec2 chunkPos, std::array<uint8_t, CHUNK_VOLUME>* data);
 };
 

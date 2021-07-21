@@ -145,19 +145,19 @@ void RenderLoop(GLFWwindow* window)
 
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		{
-			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Forward, 10, dt);
+			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Forward, 50, dt);
 		}
 		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 		{
-			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Backward, 10, dt);
+			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Backward, 50, dt);
 		}
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 		{
-			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Left, 10, dt);
+			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Left, 50, dt);
 		}
 		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		{
-			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Right, 10, dt);
+			world->GetPlayer()->ProcessKeyBoard(CameraDirection::Right, 50, dt);
 		}
 		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT))
 		{
@@ -207,7 +207,7 @@ int main()
 	//LoadTextureAtlas("Resources/atlas.png", &textureID, GL_RGBA, GL_CLAMP_TO_EDGE, &width, &height);
 	TextureAtlas* atlas = new TextureAtlas("Resources/atlas.png", 16, 16);
 	
-	world = new World(new Shader("Shaders\\vertex1.vs", "Shaders\\fragment1.fs"), atlas, new Player(glm::vec3(0, 64, 0)));
+	world = new World(new Shader("Shaders\\vertex2.vs", "Shaders\\fragment2.fs"), atlas, new Player(glm::vec3(0, 64, 0)));
 
 	RenderLoop(window);
 }
